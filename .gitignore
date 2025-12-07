@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+venv/
+.env
+
+# FastAPI uploads and previews
+uploads/
+previews/
+
+# Editor junk
+.DS_Store
+
+# Logging
+*.log
+
+# Raspberry Pi specific backups
+*.swp
+*.swo
