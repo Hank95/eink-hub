@@ -15,7 +15,15 @@ previews/
 
 # Logging
 *.log
+logs/
+
+# State files
+state.json
+strava_token.json
 
 # Raspberry Pi specific backups
 *.swp
 *.swo
+
+# Legacy backup
+_legacy/

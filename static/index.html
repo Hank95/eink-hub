@@ -2,162 +2,378 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>E-Ink Hub</title>
     <style>
+      * {
+        box-sizing: border-box;
+      }
       body {
-        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-          sans-serif;
-        max-width: 900px;
-        margin: 40px auto;
-        padding: 0 16px;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 20px;
+        background: #fafafa;
       }
       h1 {
         margin-bottom: 0.25rem;
+        color: #222;
+      }
+      h2 {
+        color: #333;
+        border-bottom: 1px solid #ddd;
+        padding-bottom: 8px;
+        margin-top: 24px;
+      }
+      .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+      .mode-toggle {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .mode-toggle button {
+        padding: 8px 16px;
+      }
+      .mode-toggle button.active {
+        background: #333;
+        color: white;
+        border-color: #333;
       }
       .grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
         gap: 16px;
         margin-top: 16px;
       }
       .card {
         border: 1px solid #ddd;
         border-radius: 8px;
-        padding: 12px;
+        padding: 16px;
+        background: white;
+      }
+      .card h3 {
+        margin-top: 0;
+        color: #333;
+      }
+      .card p {
+        color: #666;
+        font-size: 0.9rem;
       }
       button {
-        padding: 6px 12px;
+        padding: 8px 14px;
         border-radius: 6px;
         border: 1px solid #444;
         background: #f5f5f5;
         cursor: pointer;
+        font-size: 0.9rem;
+        transition: background 0.2s;
       }
       button:hover {
         background: #e5e5e5;
+      }
+      button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
       }
       img.preview {
         max-width: 100%;
         border: 1px solid #ccc;
         border-radius: 4px;
       }
-      .status {
+      .status-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
         font-size: 0.9rem;
         color: #555;
+        padding: 12px;
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        margin-bottom: 16px;
+      }
+      .status-bar .layout-name {
+        font-weight: 600;
+        color: #333;
+      }
+      .preview-container {
+        background: white;
+        padding: 16px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        text-align: center;
+      }
+      .providers-section {
+        margin-top: 24px;
+      }
+      .provider-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+      .provider-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        font-size: 0.85rem;
+      }
+      .provider-badge.enabled {
+        border-color: #4caf50;
+      }
+      .provider-badge.disabled {
+        opacity: 0.5;
+      }
+      .provider-badge.error {
+        border-color: #f44336;
+        background: #fff5f5;
+      }
+      .provider-status {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #ccc;
+      }
+      .provider-status.ok {
+        background: #4caf50;
+      }
+      .provider-status.error {
+        background: #f44336;
+      }
+      .provider-refresh {
+        padding: 4px 8px;
+        font-size: 0.75rem;
+        margin-left: 4px;
+      }
+      input[type="file"],
+      input[type="text"] {
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 0.9rem;
+      }
+      input[type="text"] {
+        width: 100%;
+      }
+      .last-updated {
+        font-size: 0.8rem;
+        color: #888;
       }
     </style>
   </head>
   <body>
-    <h1>E-Ink Display Hub</h1>
-    <div class="status" id="status"></div>
+    <div class="header">
+      <h1>E-Ink Display Hub</h1>
+      <div class="mode-toggle">
+        <span>Mode:</span>
+        <button id="btn-manual" onclick="setMode('manual')">Manual</button>
+        <button id="btn-auto" onclick="setMode('auto_rotate')">Auto-Rotate</button>
+      </div>
+    </div>
 
-    <h2>Current Preview</h2>
-    <div id="preview-container">
-      <em>No image yet.</em>
+    <div class="status-bar">
+      <div>
+        <span>Current: </span>
+        <span class="layout-name" id="current-layout">None</span>
+      </div>
+      <div class="last-updated" id="last-updated"></div>
+    </div>
+
+    <div class="preview-container" id="preview-container">
+      <em>No preview yet</em>
     </div>
 
     <h2>Layouts</h2>
-    <div class="grid">
-      <div class="card">
-        <h3>Daily Rundown</h3>
-        <p>Calendar, today’s run, and a basic summary.</p>
-        <button onclick="setDailyRundown()">Send to Display</button>
-      </div>
+    <div class="grid" id="layouts-grid">
+      <!-- Layouts will be populated dynamically -->
+    </div>
 
-      <div class="card">
-        <h3>Photo Frame</h3>
-        <p>Upload a photo and show it on the e-ink display.</p>
-        <form id="upload-form">
-          <input type="file" name="file" accept="image/*" required /><br /><br />
-          <input
-            type="text"
-            name="caption"
-            placeholder="Caption (optional)"
-            style="width: 100%;"
-          />
-          <br /><br />
-          <button type="submit">Upload & Show</button>
-        </form>
-      </div>
-      <div class="card">
-        <h3>Strava Dashboard</h3>
-        <p>Weekly mileage and a simple run summary.</p>
-        <button onclick="setStravaDashboard()">Send to Display</button>
+    <div class="providers-section">
+      <h2>Data Providers</h2>
+      <div class="provider-list" id="providers-list">
+        <!-- Providers will be populated dynamically -->
       </div>
     </div>
 
     <script>
+      let currentMode = 'manual';
+      let availableLayouts = [];
+
       async function refreshStatus() {
-        const res = await fetch("/api/status");
-        const data = await res.json();
-        const statusEl = document.getElementById("status");
-        if (data.current_layout) {
-          statusEl.textContent =
-            "Current layout: " +
-            data.current_layout +
-            " · Last updated: " +
-            (data.last_updated || "unknown");
-        } else {
-          statusEl.textContent = "No layout has been displayed yet.";
-        }
-
-        const previewContainer = document.getElementById("preview-container");
         try {
-          const imgUrl = "/api/preview";
-          // Try loading preview image by setting src
-          previewContainer.innerHTML =
-            '<img class="preview" src="' +
-            imgUrl +
-            '" alt="Preview" onerror="this.style.display=\'none\'; document.getElementById(\'preview-container\').innerHTML=\'<em>No image yet.</em>\';" />';
+          const res = await fetch("/api/status");
+          const data = await res.json();
+
+          // Update mode buttons
+          currentMode = data.mode || 'manual';
+          document.getElementById('btn-manual').classList.toggle('active', currentMode === 'manual');
+          document.getElementById('btn-auto').classList.toggle('active', currentMode === 'auto_rotate');
+
+          // Update current layout
+          const layoutEl = document.getElementById('current-layout');
+          layoutEl.textContent = data.current_layout || 'None';
+
+          // Update last updated
+          const updatedEl = document.getElementById('last-updated');
+          if (data.last_updated) {
+            const date = new Date(data.last_updated);
+            updatedEl.textContent = 'Updated: ' + date.toLocaleTimeString();
+          } else {
+            updatedEl.textContent = '';
+          }
+
+          // Update available layouts
+          availableLayouts = data.available_layouts || [];
+          renderLayoutsGrid();
+
+          // Update providers
+          renderProviders(data.providers || []);
+
+          // Update preview image
+          const previewContainer = document.getElementById('preview-container');
+          previewContainer.innerHTML = `
+            <img class="preview" src="/api/preview?t=${Date.now()}" alt="Preview"
+                 onerror="this.parentElement.innerHTML='<em>No preview yet</em>'" />
+          `;
         } catch (e) {
-          previewContainer.innerHTML = "<em>No image yet.</em>";
+          console.error('Failed to refresh status:', e);
         }
       }
 
-      async function setDailyRundown() {
-        await fetch("/api/display", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ layout: "daily_rundown", options: {} }),
-        });
-        await refreshStatus();
-      }
-      
-      async function setStravaDashboard() {
-        await fetch("/api/display", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ layout: "strava_dashboard", options: {} }),
-        });
-        await refreshStatus();
+      function renderLayoutsGrid() {
+        const grid = document.getElementById('layouts-grid');
+
+        // Define layout descriptions
+        const descriptions = {
+          'composite_hub': 'All-in-one view with weather, calendar, Strava, and tasks.',
+          'strava_dashboard': 'Weekly running stats with mileage chart.',
+          'daily_rundown': 'Calendar events with weather overview.',
+        };
+
+        grid.innerHTML = availableLayouts.map(layout => `
+          <div class="card">
+            <h3>${formatLayoutName(layout)}</h3>
+            <p>${descriptions[layout] || 'Custom layout'}</p>
+            <button onclick="setLayout('${layout}')">Send to Display</button>
+          </div>
+        `).join('');
+
+        // Add photo frame card
+        grid.innerHTML += `
+          <div class="card">
+            <h3>Photo Frame</h3>
+            <p>Upload and display a photo.</p>
+            <form id="upload-form" onsubmit="uploadPhoto(event)">
+              <input type="file" name="file" accept="image/*" required /><br /><br />
+              <input type="text" name="caption" placeholder="Caption (optional)" /><br /><br />
+              <button type="submit">Upload & Show</button>
+            </form>
+          </div>
+        `;
       }
 
-      const uploadForm = document.getElementById("upload-form");
-      uploadForm.addEventListener("submit", async (e) => {
+      function formatLayoutName(name) {
+        return name.split('_').map(word =>
+          word.charAt(0).toUpperCase() + word.slice(1)
+        ).join(' ');
+      }
+
+      function renderProviders(providers) {
+        const list = document.getElementById('providers-list');
+        list.innerHTML = providers.map(p => {
+          const statusClass = !p.enabled ? 'disabled' : (p.error ? 'error' : 'enabled');
+          const dotClass = !p.enabled ? '' : (p.error ? 'error' : 'ok');
+
+          return `
+            <div class="provider-badge ${statusClass}">
+              <span class="provider-status ${dotClass}"></span>
+              <span>${formatLayoutName(p.name)}</span>
+              ${p.enabled ? `<button class="provider-refresh" onclick="refreshProvider('${p.name}')">Refresh</button>` : ''}
+            </div>
+          `;
+        }).join('');
+      }
+
+      async function setMode(mode) {
+        try {
+          await fetch('/api/mode', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ mode })
+          });
+          await refreshStatus();
+        } catch (e) {
+          console.error('Failed to set mode:', e);
+        }
+      }
+
+      async function setLayout(layout) {
+        try {
+          await fetch('/api/display', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ layout, options: {} })
+          });
+          await refreshStatus();
+        } catch (e) {
+          console.error('Failed to set layout:', e);
+        }
+      }
+
+      async function refreshProvider(name) {
+        try {
+          await fetch(`/api/refresh/${name}`, { method: 'POST' });
+          // Wait a moment for data to be fetched
+          setTimeout(refreshStatus, 1000);
+        } catch (e) {
+          console.error('Failed to refresh provider:', e);
+        }
+      }
+
+      async function uploadPhoto(e) {
         e.preventDefault();
-        const formData = new FormData(uploadForm);
-        const uploadRes = await fetch("/api/upload", {
-          method: "POST",
-          body: formData,
-        });
-        const uploadData = await uploadRes.json();
-        const imagePath = uploadData.image_path;
-        const caption = uploadData.caption || "";
+        const form = e.target;
+        const formData = new FormData(form);
 
-        await fetch("/api/display", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            layout: "photo_frame",
-            options: { photo_path: imagePath, caption },
-          }),
-        });
-        uploadForm.reset();
-        await refreshStatus();
-      });
+        try {
+          const uploadRes = await fetch('/api/upload', {
+            method: 'POST',
+            body: formData
+          });
+          const uploadData = await uploadRes.json();
+
+          await fetch('/api/display', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              layout: 'photo_frame',
+              options: {
+                photo_path: uploadData.image_path,
+                caption: uploadData.caption || ''
+              }
+            })
+          });
+
+          form.reset();
+          await refreshStatus();
+        } catch (e) {
+          console.error('Failed to upload photo:', e);
+        }
+      }
 
       // Initial load
       refreshStatus();
-      // Optional: refresh periodically
+
+      // Refresh every 15 seconds
       setInterval(refreshStatus, 15000);
     </script>
   </body>

@@ -1,0 +1,159 @@
+# E-Ink Hub Configuration
+# Environment variables can be referenced with ${VAR_NAME} syntax
+
+display:
+  width: 800
+  height: 480
+  driver: epd7in5_V2
+  mock_mode: false  # Set true for development without hardware
+
+logging:
+  level: INFO
+  file: logs/eink-hub.log
+
+schedule:
+  mode: manual  # manual | auto_rotate
+  rotation_interval_minutes: 30
+  layout_sequence:
+    - composite_hub
+    - strava_dashboard
+  quiet_hours:
+    start: "22:00"
+    end: "07:00"
+
+providers:
+  strava:
+    enabled: true
+    refresh_interval_minutes: 15
+    credentials:
+      client_id: ${STRAVA_CLIENT_ID}
+      client_secret: ${STRAVA_CLIENT_SECRET}
+      refresh_token: ${STRAVA_REFRESH_TOKEN}
+
+  weather:
+    enabled: true
+    refresh_interval_minutes: 30
+    credentials:
+      api_key: ${OPENWEATHER_API_KEY}
+    options:
+      location: "San Francisco,US"
+      units: imperial  # imperial | metric
+
+  calendar:
+    enabled: true
+    refresh_interval_minutes: 15
+    options:
+      ical_url: ${CALENDAR_ICAL_URL}
+
+  todoist:
+    enabled: false  # Enable when you have an API token
+    refresh_interval_minutes: 10
+    credentials:
+      api_token: ${TODOIST_API_TOKEN}
+    options:
+      priority_filter: 1  # Minimum priority (1-4, 1 is highest)
+
+layouts:
+  composite_hub:
+    name: "Info Hub"
+    widgets:
+      - type: clock
+        x: 20
+        y: 15
+        width: 280
+        height: 70
+        options:
+          format: "12h"
+          show_day: true
+
+      - type: weather
+        x: 540
+        y: 15
+        width: 240
+        height: 100
+        provider: weather
+        options:
+          compact: false
+
+      - type: calendar
+        x: 20
+        y: 110
+        width: 380
+        height: 280
+        provider: calendar
+        options:
+          max_events: 6
+          show_time: true
+
+      - type: strava_compact
+        x: 420
+        y: 130
+        width: 360
+        height: 120
+        provider: strava
+
+      - type: todoist
+        x: 420
+        y: 270
+        width: 360
+        height: 120
+        provider: todoist
+        options:
+          max_tasks: 4
+
+  strava_dashboard:
+    name: "Strava Weekly"
+    widgets:
+      - type: text
+        x: 0
+        y: 18
+        width: 800
+        height: 50
+        options:
+          text: "Strava Weekly"
+          font_size: 40
+          bold: true
+          center: true
+
+      - type: strava_compact
+        x: 40
+        y: 100
+        width: 320
+        height: 180
+        provider: strava
+
+      - type: strava_chart
+        x: 400
+        y: 100
+        width: 360
+        height: 320
+        provider: strava
+
+  daily_rundown:
+    name: "Daily Rundown"
+    widgets:
+      - type: clock
+        x: 30
+        y: 20
+        width: 300
+        height: 100
+        options:
+          format: "12h"
+          show_day: true
+
+      - type: weather
+        x: 500
+        y: 20
+        width: 280
+        height: 120
+        provider: weather
+
+      - type: calendar
+        x: 30
+        y: 150
+        width: 740
+        height: 300
+        provider: calendar
+        options:
+          max_events: 8
+          show_time: true

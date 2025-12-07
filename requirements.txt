@@ -1,0 +1,19 @@
+# Core dependencies
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+pillow>=10.0.0
+pydantic>=2.5.0
+python-dotenv>=1.0.0
+
+# Data fetching
+requests>=2.31.0
+httpx>=0.25.0
+
+# Configuration
+pyyaml>=6.0
+
+# Scheduling
+apscheduler>=3.10.0
+
+# Calendar parsing
+icalendar>=5.0.0

@@ -1,71 +1,176 @@
 # main.py
+"""E-Ink Hub - Desktop information display for Raspberry Pi."""
+
+from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Optional, Dict, Any
 
-from fastapi import FastAPI, UploadFile, File, Form
-from fastapi.responses import FileResponse, HTMLResponse
+from dotenv import load_dotenv
+from fastapi import FastAPI
+from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
 
-from layouts import render_layout, LayoutType
-from eink_driver import send_to_display, get_state
+# Load environment variables before importing config
+load_dotenv()
 
-UPLOAD_DIR = Path("uploads")
-UPLOAD_DIR.mkdir(exist_ok=True)
+from eink_hub.core.config import load_config, get_config
+from eink_hub.core.logging import setup_logging, get_logger
+from eink_hub.core.scheduler import HubScheduler
+from eink_hub.core.state import StateManager
+from eink_hub.providers.registry import ProviderRegistry
+from eink_hub.layouts.renderer import LayoutRenderer
+from eink_hub.display.driver import DisplayDriver
+from eink_hub.api.routes import router as api_router, init_routes
 
-app = FastAPI()
+# Import providers to trigger registration
+from eink_hub.providers import strava, weather, calendar, todoist  # noqa: F401
 
-# Serve static files (our dashboard)
+logger = get_logger("main")
+
+# Global instances
+state_manager = StateManager()
+scheduler = HubScheduler()
+renderer: LayoutRenderer = None
+display_driver: DisplayDriver = None
+
+
+async def _refresh_provider(provider_name: str) -> None:
+    """Refresh a single provider's data."""
+    provider = ProviderRegistry.get_instance(provider_name)
+    if provider:
+        try:
+            data = await provider.fetch()
+            state_manager.update_provider_state(provider_name, data.data)
+            logger.debug(f"Provider refreshed: {provider_name}")
+        except Exception as e:
+            logger.error(f"Provider refresh failed: {provider_name} - {e}")
+            state_manager.update_provider_state(provider_name, {}, error=str(e))
+
+
+async def _rotate_display() -> None:
+    """Rotate to the next layout in the sequence."""
+    config = get_config()
+    state = state_manager.get_state()
+
+    sequence = config.schedule.layout_sequence
+    if not sequence:
+        logger.warning("No layouts in rotation sequence")
+        return
+
+    # Get next layout
+    current_index = state.display.rotation_index
+    next_index = (current_index + 1) % len(sequence)
+    next_layout = sequence[next_index]
+
+    # Update state
+    state_manager.update_display_state(rotation_index=next_index)
+
+    # Render and display
+    provider_data = state_manager.get_all_provider_data()
+    image_path = renderer.render_layout(next_layout, provider_data)
+    display_driver.send_to_display(image_path, next_layout)
+
+    logger.info(f"Rotated to layout: {next_layout}")
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Startup and shutdown logic."""
+    global renderer, display_driver
+
+    # Load configuration
+    try:
+        config = load_config()
+    except Exception as e:
+        logger.error(f"Failed to load config: {e}")
+        # Create minimal config for startup
+        from eink_hub.core.config import AppConfig
+        config = AppConfig()
+
+    # Setup logging
+    log_config = config.logging
+    setup_logging(
+        level=log_config.level,
+        log_file=Path(log_config.file) if log_config.file else None,
+    )
+
+    logger.info("E-Ink Hub starting...")
+
+    # Initialize components
+    renderer = LayoutRenderer(
+        width=config.display.width,
+        height=config.display.height,
+    )
+    display_driver = DisplayDriver(
+        state_manager=state_manager,
+        mock_mode=config.display.mock_mode,
+    )
+
+    # Initialize API routes
+    init_routes(state_manager, scheduler, renderer, display_driver)
+
+    # Initialize enabled providers
+    for name, prov_config in config.providers.items():
+        if prov_config.enabled:
+            try:
+                ProviderRegistry.create_provider(name, prov_config.model_dump())
+                logger.info(f"Initialized provider: {name}")
+            except Exception as e:
+                logger.error(f"Failed to initialize provider {name}: {e}")
+
+    # Start scheduler
+    await scheduler.start()
+
+    # Schedule provider refreshes
+    for name, prov_config in config.providers.items():
+        if prov_config.enabled:
+            scheduler.schedule_provider_refresh(
+                name,
+                lambda n=name: _refresh_provider(n),
+                prov_config.refresh_interval_minutes,
+            )
+
+    # Initial provider refresh
+    for name, prov_config in config.providers.items():
+        if prov_config.enabled:
+            try:
+                await _refresh_provider(name)
+            except Exception as e:
+                logger.warning(f"Initial refresh failed for {name}: {e}")
+
+    # Set display mode from state or config
+    state = state_manager.get_state()
+    if state.display.mode == "auto_rotate":
+        scheduler.schedule_display_rotation(
+            _rotate_display,
+            config.schedule.rotation_interval_minutes,
+        )
+
+    # Set quiet hours if configured
+    if config.schedule.quiet_hours:
+        scheduler.set_quiet_hours(
+            config.schedule.quiet_hours.get("start", "22:00"),
+            config.schedule.quiet_hours.get("end", "07:00"),
+        )
+
+    logger.info("E-Ink Hub ready")
+
+    yield
+
+    # Shutdown
+    await scheduler.stop()
+    logger.info("E-Ink Hub stopped")
+
+
+app = FastAPI(title="E-Ink Hub", lifespan=lifespan)
+
+# Mount static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-
-class DisplayRequest(BaseModel):
-    layout: LayoutType
-    options: Optional[Dict[str, Any]] = None
+# Include API routes
+app.include_router(api_router)
 
 
 @app.get("/", response_class=HTMLResponse)
 async def index():
+    """Serve the web dashboard."""
     return Path("static/index.html").read_text()
-
-@app.post("/api/display")
-async def set_display(req: DisplayRequest):
-    image_path = render_layout(req.layout, req.options or {})
-    send_to_display(image_path, req.layout, req.options or {})
-    return {"status": "ok", "layout": req.layout, "image_path": str(image_path)}
-
-
-@app.post("/api/upload")
-async def upload_image(
-    file: UploadFile = File(...),
-    caption: str = Form(""),
-):
-    suffix = Path(file.filename).suffix or ".png"
-    dest = UPLOAD_DIR / file.filename
-    # ensure no overwrite
-    i = 1
-    while dest.exists():
-        dest = UPLOAD_DIR / f"{dest.stem}_{i}{suffix}"
-        i += 1
-
-    with dest.open("wb") as f:
-        f.write(await file.read())
-
-    return {"image_path": str(dest), "caption": caption}
-
-
-@app.get("/api/status")
-async def status():
-    return get_state()
-
-
-@app.get("/api/preview")
-async def preview():
-    """
-    Returns the last rendered image (if any) so the web UI can show it.
-    """
-    state = get_state()
-    img_path = state.get("current_image")
-    if img_path and Path(img_path).exists():
-        return FileResponse(img_path, media_type="image/png")
-    return {"error": "no image"}
