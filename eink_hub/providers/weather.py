@@ -116,14 +116,14 @@ class WeatherProvider(BaseProvider):
         location: str,
         units: str,
     ) -> Dict[str, Any]:
-        """Fetch 5-day forecast (for today's high/low)."""
+        """Fetch 5-day forecast (3-hour intervals)."""
         resp = await client.get(
             f"{self.BASE_URL}/forecast",
             params={
                 "q": location,
                 "appid": api_key,
                 "units": units,
-                "cnt": 8,  # ~24 hours of 3-hour forecasts
+                "cnt": 40,  # 5 days of 3-hour forecasts
             },
         )
         resp.raise_for_status()
@@ -148,21 +148,69 @@ class WeatherProvider(BaseProvider):
         description = weather.get("description", "").title()
         wind_speed = round(wind.get("speed", 0))
 
-        # Calculate today's high/low from forecast
-        temps = []
-        for item in forecast.get("list", []):
-            temps.append(item.get("main", {}).get("temp", 0))
-
-        if temps:
-            high = round(max(temps))
-            low = round(min(temps))
-        else:
-            high = current_temp
-            low = current_temp
-
         # Temperature unit symbol
         temp_unit = "F" if units == "imperial" else "C"
         wind_unit = "mph" if units == "imperial" else "m/s"
+
+        # Process forecast data
+        forecast_list = forecast.get("list", [])
+
+        # Hourly forecast (next 24 hours, 3-hour intervals)
+        hourly = []
+        for item in forecast_list[:8]:
+            item_weather = item.get("weather", [{}])[0]
+            hourly.append({
+                "time": dt.datetime.fromtimestamp(item.get("dt", 0)).strftime("%I%p").lstrip("0").lower(),
+                "temp": round(item.get("main", {}).get("temp", 0)),
+                "condition": item_weather.get("main", "Unknown"),
+                "icon": WEATHER_ICONS.get(item_weather.get("main", ""), "unknown"),
+                "pop": round(item.get("pop", 0) * 100),  # Probability of precipitation
+            })
+
+        # Daily forecast (aggregate by day)
+        daily_data: Dict[str, Dict] = {}
+        for item in forecast_list:
+            item_dt = dt.datetime.fromtimestamp(item.get("dt", 0))
+            day_key = item_dt.strftime("%Y-%m-%d")
+            item_temp = item.get("main", {}).get("temp", 0)
+            item_weather = item.get("weather", [{}])[0]
+            item_pop = item.get("pop", 0)
+
+            if day_key not in daily_data:
+                daily_data[day_key] = {
+                    "date": item_dt,
+                    "day_name": item_dt.strftime("%a"),
+                    "temps": [],
+                    "conditions": [],
+                    "pops": [],
+                }
+            daily_data[day_key]["temps"].append(item_temp)
+            daily_data[day_key]["conditions"].append(item_weather.get("main", "Unknown"))
+            daily_data[day_key]["pops"].append(item_pop)
+
+        # Build daily forecast list
+        daily = []
+        for day_key in sorted(daily_data.keys())[:5]:
+            day = daily_data[day_key]
+            # Most common condition for the day
+            conditions = day["conditions"]
+            most_common = max(set(conditions), key=conditions.count)
+            daily.append({
+                "day_name": day["day_name"],
+                "high": round(max(day["temps"])),
+                "low": round(min(day["temps"])),
+                "condition": most_common,
+                "icon": WEATHER_ICONS.get(most_common, "unknown"),
+                "pop": round(max(day["pops"]) * 100),
+            })
+
+        # Today's high/low from first day of forecast
+        if daily:
+            high = daily[0]["high"]
+            low = daily[0]["low"]
+        else:
+            high = current_temp
+            low = current_temp
 
         return {
             "current_temp": current_temp,
@@ -177,4 +225,6 @@ class WeatherProvider(BaseProvider):
             "wind_unit": wind_unit,
             "icon": WEATHER_ICONS.get(condition, "unknown"),
             "location": current.get("name", self.options["location"]),
+            "hourly": hourly,
+            "daily": daily,
         }

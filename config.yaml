@@ -46,12 +46,12 @@ providers:
       ical_url: ${CALENDAR_ICAL_URL}
 
   todoist:
-    enabled: false  # Enable when you have an API token
+    enabled: true
     refresh_interval_minutes: 10
     credentials:
       api_token: ${TODOIST_API_TOKEN}
     options:
-      priority_filter: 1  # Minimum priority (1-4, 1 is highest)
+      priority_filter: 4  # Minimum priority (1-4, 1 is highest, 4 shows all)
 
 layouts:
   composite_hub:
@@ -171,3 +171,17 @@ layouts:
           start_hour: 7
           end_hour: 21
           show_current_time: true
+
+  weather_view:
+    name: "Weather"
+    widgets:
+      - type: weather_full
+        x: 0
+        y: 0
+        width: 800
+        height: 480
+        provider: weather
+        options:
+          show_hourly: true
+          show_daily: true
+          show_details: true

@@ -14,7 +14,7 @@ from ..widgets.base import WidgetBounds
 from ..widgets.registry import WidgetRegistry
 
 # Import widgets to trigger registration
-from ..widgets import clock, text, weather, calendar, strava, todoist, calendar_week  # noqa: F401
+from ..widgets import clock, text, weather, calendar, strava, todoist, calendar_week, weather_full  # noqa: F401
 
 logger = get_logger("layouts.renderer")
 
@@ -62,7 +62,7 @@ class LayoutRenderer:
             if not layout_config:
                 raise ValueError(f"Unknown layout: {layout_name}")
 
-        # Create canvas (grayscale)
+        # Create canvas (grayscale for rendering, convert to 1-bit for output)
         bg_color = layout_config.background_color
         img = Image.new("L", (self.width, self.height), color=bg_color)
         draw = ImageDraw.Draw(img)

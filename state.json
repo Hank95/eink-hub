@@ -1,14 +1,14 @@
 {
   "display": {
-    "current_layout": "week_view",
-    "current_image": "previews/week_view.png",
-    "last_updated": "2025-12-07T21:08:24.283507",
-    "mode": "manual",
+    "current_layout": "strava_dashboard",
+    "current_image": "previews/strava_dashboard.png",
+    "last_updated": "2025-12-07T21:44:44.307995",
+    "mode": "auto_rotate",
     "rotation_index": 0
   },
   "providers": {
     "strava": {
-      "last_fetch": "2025-12-07T21:08:08.766107",
+      "last_fetch": "2025-12-07T21:42:58.145305",
       "data": {
         "week_total_miles": 50.4,
         "weekly_miles": [
@@ -56,25 +56,125 @@
       "error": null
     },
     "weather": {
-      "last_fetch": "2025-12-07T21:08:09.184671",
+      "last_fetch": "2025-12-07T21:42:58.610997",
       "data": {
         "current_temp": 46,
-        "feels_like": 41,
-        "high": 50,
-        "low": 44,
+        "feels_like": 42,
+        "high": 46,
+        "low": 46,
         "humidity": 97,
-        "condition": "Mist",
-        "description": "Mist",
-        "wind_speed": 12,
+        "condition": "Rain",
+        "description": "Light Rain",
+        "wind_speed": 8,
         "temp_unit": "F",
         "wind_unit": "mph",
-        "icon": "foggy",
-        "location": "Charleston"
+        "icon": "rainy",
+        "location": "Charleston",
+        "hourly": [
+          {
+            "time": "10pm",
+            "temp": 46,
+            "condition": "Rain",
+            "icon": "rainy",
+            "pop": 100
+          },
+          {
+            "time": "1am",
+            "temp": 47,
+            "condition": "Clouds",
+            "icon": "cloudy",
+            "pop": 80
+          },
+          {
+            "time": "4am",
+            "temp": 47,
+            "condition": "Clouds",
+            "icon": "cloudy",
+            "pop": 0
+          },
+          {
+            "time": "7am",
+            "temp": 48,
+            "condition": "Clouds",
+            "icon": "cloudy",
+            "pop": 0
+          },
+          {
+            "time": "10am",
+            "temp": 48,
+            "condition": "Clouds",
+            "icon": "cloudy",
+            "pop": 7
+          },
+          {
+            "time": "1pm",
+            "temp": 50,
+            "condition": "Rain",
+            "icon": "rainy",
+            "pop": 31
+          },
+          {
+            "time": "4pm",
+            "temp": 47,
+            "condition": "Clouds",
+            "icon": "cloudy",
+            "pop": 0
+          },
+          {
+            "time": "7pm",
+            "temp": 44,
+            "condition": "Clouds",
+            "icon": "cloudy",
+            "pop": 0
+          }
+        ],
+        "daily": [
+          {
+            "day_name": "Sun",
+            "high": 46,
+            "low": 46,
+            "condition": "Rain",
+            "icon": "rainy",
+            "pop": 100
+          },
+          {
+            "day_name": "Mon",
+            "high": 50,
+            "low": 42,
+            "condition": "Clouds",
+            "icon": "cloudy",
+            "pop": 80
+          },
+          {
+            "day_name": "Tue",
+            "high": 47,
+            "low": 33,
+            "condition": "Clouds",
+            "icon": "cloudy",
+            "pop": 0
+          },
+          {
+            "day_name": "Wed",
+            "high": 59,
+            "low": 41,
+            "condition": "Clear",
+            "icon": "sunny",
+            "pop": 0
+          },
+          {
+            "day_name": "Thu",
+            "high": 60,
+            "low": 50,
+            "condition": "Clouds",
+            "icon": "cloudy",
+            "pop": 0
+          }
+        ]
       },
       "error": null
     },
     "calendar": {
-      "last_fetch": "2025-12-07T21:08:10.856127",
+      "last_fetch": "2025-12-07T21:43:00.358893",
       "data": {
         "today_events": [],
         "tomorrow_events": [],
