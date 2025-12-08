@@ -168,11 +168,22 @@
         font-size: 0.8rem;
         color: #888;
       }
+      .nav-link {
+        color: #0066cc;
+        text-decoration: none;
+        font-size: 0.9rem;
+      }
+      .nav-link:hover {
+        text-decoration: underline;
+      }
     </style>
   </head>
   <body>
     <div class="header">
-      <h1>E-Ink Display Hub</h1>
+      <div>
+        <h1>E-Ink Display Hub</h1>
+        <a href="/sensors" class="nav-link">View Sensor History &rarr;</a>
+      </div>
       <div class="mode-toggle">
         <span>Mode:</span>
         <button id="btn-manual" onclick="setMode('manual')">Manual</button>

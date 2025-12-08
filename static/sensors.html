@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sensor History - E-Ink Hub</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+        background: #fafafa;
+      }
+      h1 {
+        margin-bottom: 0.25rem;
+        color: #222;
+      }
+      h2 {
+        color: #333;
+        border-bottom: 1px solid #ddd;
+        padding-bottom: 8px;
+        margin-top: 24px;
+      }
+      .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-bottom: 20px;
+      }
+      .nav-link {
+        color: #0066cc;
+        text-decoration: none;
+      }
+      .nav-link:hover {
+        text-decoration: underline;
+      }
+      .current-readings {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
+      }
+      .reading-card {
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 20px;
+        text-align: center;
+      }
+      .reading-card.stale {
+        border-color: #f0ad4e;
+        background: #fffdf5;
+      }
+      .reading-value {
+        font-size: 2.5rem;
+        font-weight: bold;
+        color: #333;
+      }
+      .reading-label {
+        font-size: 0.9rem;
+        color: #666;
+        margin-top: 4px;
+      }
+      .reading-meta {
+        font-size: 0.8rem;
+        color: #999;
+        margin-top: 8px;
+      }
+      .stats-row {
+        display: flex;
+        justify-content: center;
+        gap: 16px;
+        margin-top: 12px;
+        font-size: 0.85rem;
+        color: #666;
+      }
+      .stat {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      .stat-value {
+        font-weight: 600;
+        color: #333;
+      }
+      .chart-container {
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 24px;
+      }
+      .chart-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+      }
+      .chart-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #333;
+      }
+      .time-selector {
+        display: flex;
+        gap: 8px;
+      }
+      .time-selector button {
+        padding: 6px 12px;
+        border: 1px solid #ddd;
+        background: white;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.85rem;
+      }
+      .time-selector button:hover {
+        background: #f5f5f5;
+      }
+      .time-selector button.active {
+        background: #333;
+        color: white;
+        border-color: #333;
+      }
+      .chart-wrapper {
+        position: relative;
+        height: 300px;
+      }
+      .no-data {
+        text-align: center;
+        padding: 40px;
+        color: #666;
+      }
+      .sensor-info {
+        font-size: 0.9rem;
+        color: #666;
+        margin-bottom: 16px;
+      }
+
+      /* Advanced View Styles */
+      .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 32px;
+        margin-bottom: 16px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid #ddd;
+      }
+      .section-header h2 {
+        margin: 0;
+        border: none;
+        padding: 0;
+      }
+      .toggle-btn {
+        padding: 8px 16px;
+        border: 1px solid #ddd;
+        background: white;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.85rem;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .toggle-btn:hover {
+        background: #f5f5f5;
+      }
+      .toggle-btn.active {
+        background: #333;
+        color: white;
+        border-color: #333;
+      }
+      .advanced-section {
+        display: none;
+      }
+      .advanced-section.visible {
+        display: block;
+      }
+      .data-table-container {
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        overflow: hidden;
+      }
+      .table-controls {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 16px;
+        background: #f9f9f9;
+        border-bottom: 1px solid #ddd;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+      .table-controls-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .table-controls select {
+        padding: 6px 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 0.85rem;
+      }
+      .table-controls label {
+        font-size: 0.85rem;
+        color: #666;
+      }
+      .record-count {
+        font-size: 0.85rem;
+        color: #666;
+      }
+      .data-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.9rem;
+      }
+      .data-table th {
+        background: #f5f5f5;
+        padding: 12px 16px;
+        text-align: left;
+        font-weight: 600;
+        color: #333;
+        border-bottom: 2px solid #ddd;
+        position: sticky;
+        top: 0;
+      }
+      .data-table td {
+        padding: 10px 16px;
+        border-bottom: 1px solid #eee;
+        color: #444;
+      }
+      .data-table tr:hover {
+        background: #fafafa;
+      }
+      .data-table .id-col {
+        color: #999;
+        font-family: monospace;
+        font-size: 0.8rem;
+      }
+      .data-table .timestamp-col {
+        white-space: nowrap;
+      }
+      .data-table .sensor-col {
+        font-family: monospace;
+        font-size: 0.85rem;
+      }
+      .data-table .value-col {
+        font-weight: 500;
+        text-align: right;
+      }
+      .data-table .temp-col {
+        color: #e74c3c;
+      }
+      .data-table .humidity-col {
+        color: #3498db;
+      }
+      .table-scroll {
+        max-height: 500px;
+        overflow-y: auto;
+      }
+      .pagination {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 8px;
+        padding: 12px;
+        background: #f9f9f9;
+        border-top: 1px solid #ddd;
+      }
+      .pagination button {
+        padding: 6px 12px;
+        border: 1px solid #ddd;
+        background: white;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.85rem;
+      }
+      .pagination button:hover:not(:disabled) {
+        background: #f5f5f5;
+      }
+      .pagination button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      .pagination .page-info {
+        font-size: 0.85rem;
+        color: #666;
+        padding: 0 12px;
+      }
+      .export-btn {
+        padding: 6px 12px;
+        border: 1px solid #4caf50;
+        background: white;
+        color: #4caf50;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.85rem;
+      }
+      .export-btn:hover {
+        background: #4caf50;
+        color: white;
+      }
+      .db-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+      .db-stat-card {
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        padding: 12px;
+        text-align: center;
+      }
+      .db-stat-value {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #333;
+      }
+      .db-stat-label {
+        font-size: 0.8rem;
+        color: #666;
+        margin-top: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <div>
+        <h1>Indoor Sensor History</h1>
+        <a href="/" class="nav-link">&larr; Back to Dashboard</a>
+      </div>
+      <div class="sensor-info" id="sensor-info">
+        Loading...
+      </div>
+    </div>
+
+    <div class="current-readings" id="current-readings">
+      <div class="reading-card">
+        <div class="reading-value" id="current-temp">--</div>
+        <div class="reading-label">Temperature</div>
+        <div class="stats-row">
+          <div class="stat">
+            <span class="stat-value" id="temp-min">--</span>
+            <span>Min</span>
+          </div>
+          <div class="stat">
+            <span class="stat-value" id="temp-max">--</span>
+            <span>Max</span>
+          </div>
+          <div class="stat">
+            <span class="stat-value" id="temp-avg">--</span>
+            <span>Avg</span>
+          </div>
+        </div>
+      </div>
+      <div class="reading-card">
+        <div class="reading-value" id="current-humidity">--</div>
+        <div class="reading-label">Humidity</div>
+        <div class="stats-row">
+          <div class="stat">
+            <span class="stat-value" id="hum-min">--</span>
+            <span>Min</span>
+          </div>
+          <div class="stat">
+            <span class="stat-value" id="hum-max">--</span>
+            <span>Max</span>
+          </div>
+          <div class="stat">
+            <span class="stat-value" id="hum-avg">--</span>
+            <span>Avg</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="chart-container">
+      <div class="chart-header">
+        <span class="chart-title">Temperature History</span>
+        <div class="time-selector">
+          <button onclick="setTimeRange(1)" id="btn-1h">1H</button>
+          <button onclick="setTimeRange(6)" id="btn-6h">6H</button>
+          <button onclick="setTimeRange(24)" class="active" id="btn-24h">24H</button>
+          <button onclick="setTimeRange(72)" id="btn-72h">3D</button>
+          <button onclick="setTimeRange(168)" id="btn-168h">7D</button>
+        </div>
+      </div>
+      <div class="chart-wrapper">
+        <canvas id="tempChart"></canvas>
+      </div>
+    </div>
+
+    <div class="chart-container">
+      <div class="chart-header">
+        <span class="chart-title">Humidity History</span>
+      </div>
+      <div class="chart-wrapper">
+        <canvas id="humidityChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Advanced Database View -->
+    <div class="section-header">
+      <h2>Database Records</h2>
+      <button class="toggle-btn" id="toggle-advanced" onclick="toggleAdvancedView()">
+        <span id="toggle-icon">+</span> Show Raw Data
+      </button>
+    </div>
+
+    <div class="advanced-section" id="advanced-section">
+      <!-- Database Stats -->
+      <div class="db-stats" id="db-stats">
+        <div class="db-stat-card">
+          <div class="db-stat-value" id="total-records">--</div>
+          <div class="db-stat-label">Total Records</div>
+        </div>
+        <div class="db-stat-card">
+          <div class="db-stat-value" id="sensor-count">--</div>
+          <div class="db-stat-label">Sensors</div>
+        </div>
+        <div class="db-stat-card">
+          <div class="db-stat-value" id="oldest-record">--</div>
+          <div class="db-stat-label">Oldest Record</div>
+        </div>
+        <div class="db-stat-card">
+          <div class="db-stat-value" id="newest-record">--</div>
+          <div class="db-stat-label">Newest Record</div>
+        </div>
+      </div>
+
+      <!-- Data Table -->
+      <div class="data-table-container">
+        <div class="table-controls">
+          <div class="table-controls-left">
+            <label>
+              Time Range:
+              <select id="table-hours" onchange="fetchTableData()">
+                <option value="1">Last 1 hour</option>
+                <option value="6">Last 6 hours</option>
+                <option value="24" selected>Last 24 hours</option>
+                <option value="72">Last 3 days</option>
+                <option value="168">Last 7 days</option>
+                <option value="720">Last 30 days</option>
+              </select>
+            </label>
+            <label>
+              Rows per page:
+              <select id="rows-per-page" onchange="changePageSize()">
+                <option value="25">25</option>
+                <option value="50" selected>50</option>
+                <option value="100">100</option>
+                <option value="250">250</option>
+              </select>
+            </label>
+          </div>
+          <div>
+            <span class="record-count" id="record-count">Loading...</span>
+            <button class="export-btn" onclick="exportCSV()">Export CSV</button>
+          </div>
+        </div>
+
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Timestamp</th>
+                <th>Sensor ID</th>
+                <th style="text-align: right">Temp (C)</th>
+                <th style="text-align: right">Temp (F)</th>
+                <th style="text-align: right">Humidity (%)</th>
+              </tr>
+            </thead>
+            <tbody id="table-body">
+              <tr><td colspan="6" style="text-align: center; padding: 20px;">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="pagination">
+          <button onclick="changePage(-1)" id="prev-btn" disabled>Previous</button>
+          <span class="page-info" id="page-info">Page 1</span>
+          <button onclick="changePage(1)" id="next-btn">Next</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      let currentHours = 24;
+      let tempChart = null;
+      let humidityChart = null;
+
+      const chartOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+          intersect: false,
+          mode: 'index',
+        },
+        plugins: {
+          legend: {
+            display: false,
+          },
+          tooltip: {
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            padding: 12,
+            callbacks: {
+              title: function(context) {
+                const date = new Date(context[0].parsed.x);
+                return date.toLocaleString();
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            type: 'time',
+            time: {
+              displayFormats: {
+                hour: 'ha',
+                day: 'MMM d',
+              }
+            },
+            grid: {
+              display: false,
+            },
+            ticks: {
+              maxTicksLimit: 8,
+            }
+          },
+          y: {
+            grid: {
+              color: '#f0f0f0',
+            },
+            ticks: {
+              padding: 8,
+            }
+          }
+        }
+      };
+
+      function initCharts() {
+        const tempCtx = document.getElementById('tempChart').getContext('2d');
+        tempChart = new Chart(tempCtx, {
+          type: 'line',
+          data: {
+            datasets: [{
+              label: 'Temperature (°F)',
+              data: [],
+              borderColor: '#e74c3c',
+              backgroundColor: 'rgba(231, 76, 60, 0.1)',
+              fill: true,
+              tension: 0.3,
+              pointRadius: 0,
+              pointHoverRadius: 5,
+            }]
+          },
+          options: {
+            ...chartOptions,
+            scales: {
+              ...chartOptions.scales,
+              y: {
+                ...chartOptions.scales.y,
+                title: {
+                  display: true,
+                  text: '°F'
+                }
+              }
+            }
+          }
+        });
+
+        const humCtx = document.getElementById('humidityChart').getContext('2d');
+        humidityChart = new Chart(humCtx, {
+          type: 'line',
+          data: {
+            datasets: [{
+              label: 'Humidity (%)',
+              data: [],
+              borderColor: '#3498db',
+              backgroundColor: 'rgba(52, 152, 219, 0.1)',
+              fill: true,
+              tension: 0.3,
+              pointRadius: 0,
+              pointHoverRadius: 5,
+            }]
+          },
+          options: {
+            ...chartOptions,
+            scales: {
+              ...chartOptions.scales,
+              y: {
+                ...chartOptions.scales.y,
+                title: {
+                  display: true,
+                  text: '%'
+                },
+                min: 0,
+                max: 100,
+              }
+            }
+          }
+        });
+      }
+
+      async function fetchCurrentData() {
+        try {
+          const res = await fetch('/api/sensor-data');
+          const data = await res.json();
+
+          if (!data.available) {
+            document.getElementById('sensor-info').textContent = 'No sensor data available';
+            return;
+          }
+
+          // Update current readings
+          document.getElementById('current-temp').textContent = `${data.temperature_f}°F`;
+          document.getElementById('current-humidity').textContent = `${data.humidity}%`;
+
+          // Update sensor info
+          const ageText = data.age_minutes === 0 ? 'just now' :
+                         data.age_minutes === 1 ? '1 min ago' :
+                         `${data.age_minutes} min ago`;
+          document.getElementById('sensor-info').textContent =
+            `Sensor: ${data.sensor_id} | Last update: ${ageText}`;
+
+          // Mark as stale if needed
+          const cards = document.querySelectorAll('.reading-card');
+          cards.forEach(card => {
+            card.classList.toggle('stale', data.is_stale);
+          });
+        } catch (e) {
+          console.error('Failed to fetch current data:', e);
+        }
+      }
+
+      async function fetchHistory() {
+        try {
+          const res = await fetch(`/api/sensor-data/history?hours=${currentHours}`);
+          const data = await res.json();
+
+          if (!data.readings || data.readings.length === 0) {
+            return;
+          }
+
+          // Update stats
+          const stats = data.stats;
+          if (stats && stats.reading_count > 0) {
+            const tempStats = stats.temperature;
+            const humStats = stats.humidity;
+
+            // Convert to Fahrenheit for display
+            const toF = (c) => c !== null ? ((c * 9/5) + 32).toFixed(1) : '--';
+
+            document.getElementById('temp-min').textContent = `${toF(tempStats.min)}°`;
+            document.getElementById('temp-max').textContent = `${toF(tempStats.max)}°`;
+            document.getElementById('temp-avg').textContent = `${toF(tempStats.avg)}°`;
+
+            document.getElementById('hum-min').textContent = `${humStats.min}%`;
+            document.getElementById('hum-max').textContent = `${humStats.max}%`;
+            document.getElementById('hum-avg').textContent = `${humStats.avg?.toFixed(1)}%`;
+          }
+
+          // Prepare chart data (readings are in DESC order, reverse for chart)
+          const readings = data.readings.reverse();
+
+          const tempData = readings.map(r => ({
+            x: new Date(r.timestamp),
+            y: (r.temperature_c * 9/5) + 32  // Convert to Fahrenheit
+          }));
+
+          const humData = readings.map(r => ({
+            x: new Date(r.timestamp),
+            y: r.humidity
+          }));
+
+          // Update charts
+          tempChart.data.datasets[0].data = tempData;
+          tempChart.update('none');
+
+          humidityChart.data.datasets[0].data = humData;
+          humidityChart.update('none');
+
+        } catch (e) {
+          console.error('Failed to fetch history:', e);
+        }
+      }
+
+      function setTimeRange(hours) {
+        currentHours = hours;
+
+        // Update button states
+        document.querySelectorAll('.time-selector button').forEach(btn => {
+          btn.classList.remove('active');
+        });
+        document.getElementById(`btn-${hours}h`).classList.add('active');
+
+        fetchHistory();
+      }
+
+      // Initialize
+      initCharts();
+      fetchCurrentData();
+      fetchHistory();
+
+      // Refresh current data every 30 seconds
+      setInterval(fetchCurrentData, 30000);
+
+      // Refresh history every 2 minutes
+      setInterval(fetchHistory, 120000);
+
+      // ============================================
+      // Advanced Database View
+      // ============================================
+
+      let advancedVisible = false;
+      let allTableData = [];
+      let currentPage = 1;
+      let rowsPerPage = 50;
+
+      function toggleAdvancedView() {
+        advancedVisible = !advancedVisible;
+        const section = document.getElementById('advanced-section');
+        const btn = document.getElementById('toggle-advanced');
+        const icon = document.getElementById('toggle-icon');
+
+        if (advancedVisible) {
+          section.classList.add('visible');
+          btn.classList.add('active');
+          icon.textContent = '-';
+          btn.innerHTML = '<span id="toggle-icon">-</span> Hide Raw Data';
+          fetchTableData();
+        } else {
+          section.classList.remove('visible');
+          btn.classList.remove('active');
+          icon.textContent = '+';
+          btn.innerHTML = '<span id="toggle-icon">+</span> Show Raw Data';
+        }
+      }
+
+      async function fetchTableData() {
+        const hours = parseInt(document.getElementById('table-hours').value);
+
+        try {
+          const res = await fetch(`/api/sensor-data/history?hours=${hours}`);
+          const data = await res.json();
+
+          if (!data.readings) {
+            document.getElementById('table-body').innerHTML =
+              '<tr><td colspan="6" style="text-align: center; padding: 20px;">No data available</td></tr>';
+            return;
+          }
+
+          // Store all data (already in DESC order - newest first)
+          allTableData = data.readings;
+
+          // Update stats
+          updateDbStats(data);
+
+          // Reset to first page
+          currentPage = 1;
+          renderTable();
+
+        } catch (e) {
+          console.error('Failed to fetch table data:', e);
+          document.getElementById('table-body').innerHTML =
+            '<tr><td colspan="6" style="text-align: center; padding: 20px; color: red;">Error loading data</td></tr>';
+        }
+      }
+
+      function updateDbStats(data) {
+        const readings = data.readings || [];
+        const stats = data.stats || {};
+
+        document.getElementById('total-records').textContent = readings.length.toLocaleString();
+        document.getElementById('record-count').textContent = `${readings.length.toLocaleString()} records`;
+
+        // Get unique sensors
+        const sensors = new Set(readings.map(r => r.sensor_id));
+        document.getElementById('sensor-count').textContent = sensors.size;
+
+        // Oldest and newest (readings are DESC, so last is oldest)
+        if (readings.length > 0) {
+          const newest = new Date(readings[0].timestamp);
+          const oldest = new Date(readings[readings.length - 1].timestamp);
+
+          document.getElementById('newest-record').textContent = formatShortDate(newest);
+          document.getElementById('oldest-record').textContent = formatShortDate(oldest);
+        } else {
+          document.getElementById('newest-record').textContent = '--';
+          document.getElementById('oldest-record').textContent = '--';
+        }
+      }
+
+      function formatShortDate(date) {
+        const now = new Date();
+        const diffMs = now - date;
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMs / 3600000);
+        const diffDays = Math.floor(diffMs / 86400000);
+
+        if (diffMins < 1) return 'Just now';
+        if (diffMins < 60) return `${diffMins}m ago`;
+        if (diffHours < 24) return `${diffHours}h ago`;
+        if (diffDays < 7) return `${diffDays}d ago`;
+
+        return date.toLocaleDateString();
+      }
+
+      function renderTable() {
+        const tbody = document.getElementById('table-body');
+        const startIdx = (currentPage - 1) * rowsPerPage;
+        const endIdx = startIdx + rowsPerPage;
+        const pageData = allTableData.slice(startIdx, endIdx);
+
+        if (pageData.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 20px;">No data</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = pageData.map(row => {
+          const tempF = ((row.temperature_c * 9/5) + 32).toFixed(1);
+          const timestamp = new Date(row.timestamp);
+          const timeStr = timestamp.toLocaleString();
+
+          return `
+            <tr>
+              <td class="id-col">${row.id}</td>
+              <td class="timestamp-col">${timeStr}</td>
+              <td class="sensor-col">${row.sensor_id}</td>
+              <td class="value-col temp-col">${row.temperature_c.toFixed(1)}</td>
+              <td class="value-col temp-col">${tempF}</td>
+              <td class="value-col humidity-col">${row.humidity.toFixed(1)}</td>
+            </tr>
+          `;
+        }).join('');
+
+        // Update pagination
+        const totalPages = Math.ceil(allTableData.length / rowsPerPage);
+        document.getElementById('page-info').textContent = `Page ${currentPage} of ${totalPages}`;
+        document.getElementById('prev-btn').disabled = currentPage <= 1;
+        document.getElementById('next-btn').disabled = currentPage >= totalPages;
+      }
+
+      function changePage(delta) {
+        const totalPages = Math.ceil(allTableData.length / rowsPerPage);
+        const newPage = currentPage + delta;
+
+        if (newPage >= 1 && newPage <= totalPages) {
+          currentPage = newPage;
+          renderTable();
+        }
+      }
+
+      function changePageSize() {
+        rowsPerPage = parseInt(document.getElementById('rows-per-page').value);
+        currentPage = 1;
+        renderTable();
+      }
+
+      function exportCSV() {
+        if (allTableData.length === 0) {
+          alert('No data to export');
+          return;
+        }
+
+        // Build CSV content
+        const headers = ['id', 'timestamp', 'sensor_id', 'temperature_c', 'temperature_f', 'humidity'];
+        const rows = allTableData.map(row => {
+          const tempF = ((row.temperature_c * 9/5) + 32).toFixed(2);
+          return [
+            row.id,
+            row.timestamp,
+            row.sensor_id,
+            row.temperature_c.toFixed(2),
+            tempF,
+            row.humidity.toFixed(2)
+          ].join(',');
+        });
+
+        const csv = [headers.join(','), ...rows].join('\n');
+
+        // Download
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `sensor_data_${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+    </script>
+  </body>
+</html>

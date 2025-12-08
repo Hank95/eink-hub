@@ -22,7 +22,7 @@ from eink_hub.display.driver import DisplayDriver
 from eink_hub.api.routes import router as api_router, init_routes
 
 # Import providers to trigger registration
-from eink_hub.providers import strava, weather, calendar, todoist  # noqa: F401
+from eink_hub.providers import strava, weather, calendar, todoist, indoor_sensor  # noqa: F401
 
 logger = get_logger("main")
 
@@ -175,3 +175,9 @@ app.include_router(api_router)
 async def index():
     """Serve the web dashboard."""
     return Path("static/index.html").read_text()
+
+
+@app.get("/sensors", response_class=HTMLResponse)
+async def sensors_page():
+    """Serve the sensor history page."""
+    return Path("static/sensors.html").read_text()

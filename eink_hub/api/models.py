@@ -87,3 +87,35 @@ class ErrorResponse(BaseModel):
 
     status: str = "error"
     message: str
+
+
+class SensorDataRequest(BaseModel):
+    """Request to submit sensor data from ESP32."""
+
+    temperature_c: float
+    humidity: float
+    sensor_id: str = "esp32_dht11_1"
+
+
+class SensorDataResponse(BaseModel):
+    """Response after receiving sensor data."""
+
+    status: str = "ok"
+    reading_id: int
+    sensor_id: str
+    temperature_c: float
+    humidity: float
+
+
+class SensorReadingResponse(BaseModel):
+    """Response with sensor reading data."""
+
+    available: bool
+    sensor_id: Optional[str] = None
+    temperature_c: Optional[float] = None
+    temperature_f: Optional[float] = None
+    humidity: Optional[float] = None
+    timestamp: Optional[str] = None
+    age_minutes: Optional[int] = None
+    is_stale: Optional[bool] = None
+    error: Optional[str] = None

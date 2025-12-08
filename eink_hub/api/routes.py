@@ -9,6 +9,7 @@ from fastapi import APIRouter, BackgroundTasks, HTTPException, UploadFile, File,
 from fastapi.responses import FileResponse
 
 from ..core.config import get_config, reload_config
+from ..core.database import get_sensor_db
 from ..core.logging import get_logger
 from ..core.state import StateManager
 from .models import (
@@ -19,6 +20,9 @@ from .models import (
     StatusResponse,
     SuccessResponse,
     LayoutInfo,
+    SensorDataRequest,
+    SensorDataResponse,
+    SensorReadingResponse,
 )
 
 if TYPE_CHECKING:
@@ -141,17 +145,29 @@ async def set_mode(req: ModeRequest):
 
 
 @router.post("/refresh/{provider_name}", response_model=SuccessResponse)
-async def refresh_provider(provider_name: str):
+async def refresh_provider(provider_name: str, background_tasks: BackgroundTasks):
     """Manually trigger a provider refresh."""
+    from ..providers.registry import ProviderRegistry
+
     config = get_config()
 
     if provider_name not in config.providers:
         raise HTTPException(404, f"Unknown provider: {provider_name}")
 
-    _scheduler.trigger_now(f"provider_{provider_name}")
-    logger.info(f"Manual refresh triggered: {provider_name}")
+    # Directly fetch and update state instead of relying on scheduler
+    provider = ProviderRegistry.get_instance(provider_name)
+    if provider:
+        try:
+            data = await provider.fetch()
+            _state_manager.update_provider_state(provider_name, data.data)
+            logger.info(f"Provider refreshed directly: {provider_name}")
+            return SuccessResponse(status="ok", message=f"Refresh completed for {provider_name}")
+        except Exception as e:
+            logger.error(f"Provider refresh failed: {provider_name} - {e}")
+            _state_manager.update_provider_state(provider_name, {}, error=str(e))
+            raise HTTPException(500, f"Refresh failed: {e}")
 
-    return SuccessResponse(status="ok", message=f"Refresh triggered for {provider_name}")
+    raise HTTPException(404, f"Provider instance not found: {provider_name}")
 
 
 @router.post("/reload-config", response_model=SuccessResponse)
@@ -246,3 +262,134 @@ async def upload_image(
     logger.info(f"Image uploaded: {dest}")
 
     return {"image_path": str(dest), "caption": caption}
+
+
+# ============================================================================
+# ESP32 Sensor Data Endpoints
+# ============================================================================
+
+
+@router.post("/sensor-data", response_model=SensorDataResponse)
+@router.post("/weather", response_model=SensorDataResponse, include_in_schema=False)
+async def receive_sensor_data(data: SensorDataRequest):
+    """
+    Receive sensor data from ESP32 DHT11 sensor.
+
+    Also aliased as POST /api/weather for ESP32 compatibility.
+
+    Expected JSON payload:
+    {
+        "temperature_c": 23.5,
+        "humidity": 45.2,
+        "sensor_id": "esp32_dht11_1"
+    }
+    """
+    try:
+        db = get_sensor_db()
+        reading_id = db.insert_reading(
+            sensor_id=data.sensor_id,
+            temperature_c=data.temperature_c,
+            humidity=data.humidity,
+        )
+
+        logger.info(
+            f"Sensor data received from {data.sensor_id}: "
+            f"{data.temperature_c}°C, {data.humidity}%"
+        )
+
+        return SensorDataResponse(
+            status="ok",
+            reading_id=reading_id,
+            sensor_id=data.sensor_id,
+            temperature_c=data.temperature_c,
+            humidity=data.humidity,
+        )
+    except Exception as e:
+        logger.error(f"Failed to store sensor data: {e}")
+        raise HTTPException(500, f"Failed to store sensor data: {e}")
+
+
+@router.get("/sensor-data", response_model=SensorReadingResponse)
+async def get_sensor_data(sensor_id: str = None):
+    """Get the latest sensor reading."""
+    try:
+        db = get_sensor_db()
+        reading = db.get_latest_reading(sensor_id)
+
+        if reading is None:
+            return SensorReadingResponse(
+                available=False,
+                error="No sensor data available"
+            )
+
+        import datetime as dt
+
+        # Parse timestamp
+        timestamp = reading["timestamp"]
+        if isinstance(timestamp, str):
+            timestamp = dt.datetime.fromisoformat(timestamp)
+
+        # Calculate age
+        age_seconds = (dt.datetime.now() - timestamp).total_seconds()
+        age_minutes = int(age_seconds / 60)
+        is_stale = age_seconds > 300
+
+        # Convert to Fahrenheit
+        temp_c = reading["temperature_c"]
+        temp_f = (temp_c * 9 / 5) + 32
+
+        return SensorReadingResponse(
+            available=True,
+            sensor_id=reading["sensor_id"],
+            temperature_c=round(temp_c, 1),
+            temperature_f=round(temp_f, 1),
+            humidity=round(reading["humidity"], 1),
+            timestamp=timestamp.isoformat(),
+            age_minutes=age_minutes,
+            is_stale=is_stale,
+        )
+    except Exception as e:
+        logger.error(f"Failed to fetch sensor data: {e}")
+        raise HTTPException(500, f"Failed to fetch sensor data: {e}")
+
+
+@router.get("/sensor-data/history")
+async def get_sensor_history(sensor_id: str = None, hours: int = 24):
+    """Get sensor reading history."""
+    try:
+        db = get_sensor_db()
+        readings = db.get_readings(sensor_id, hours=hours)
+        stats = db.get_stats(sensor_id, hours=hours)
+
+        return {
+            "readings": readings,
+            "stats": stats,
+            "hours": hours,
+            "sensor_id": sensor_id,
+        }
+    except Exception as e:
+        logger.error(f"Failed to fetch sensor history: {e}")
+        raise HTTPException(500, f"Failed to fetch sensor history: {e}")
+
+
+@router.get("/sensor-data/sensors")
+async def list_sensors():
+    """List all known sensors."""
+    try:
+        db = get_sensor_db()
+        sensors = db.get_all_sensors()
+
+        # Get latest reading for each sensor
+        sensor_info = []
+        for sensor_id in sensors:
+            reading = db.get_latest_reading(sensor_id)
+            if reading:
+                sensor_info.append({
+                    "sensor_id": sensor_id,
+                    "last_reading": reading,
+                })
+
+        return {"sensors": sensor_info}
+    except Exception as e:
+        logger.error(f"Failed to list sensors: {e}")
+        raise HTTPException(500, f"Failed to list sensors: {e}")
