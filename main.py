@@ -12,7 +12,7 @@ from fastapi.staticfiles import StaticFiles
 # Load environment variables before importing config
 load_dotenv()
 
-from eink_hub.core.config import load_config, get_config
+from eink_hub.core.config import load_config, get_config, set_config
 from eink_hub.core.logging import setup_logging, get_logger
 from eink_hub.core.scheduler import HubScheduler
 from eink_hub.core.state import StateManager
@@ -82,9 +82,10 @@ async def lifespan(app: FastAPI):
         config = load_config()
     except Exception as e:
         logger.error(f"Failed to load config: {e}")
-        # Create minimal config for startup
+        # Create minimal config for startup and set it globally
         from eink_hub.core.config import AppConfig
         config = AppConfig()
+        set_config(config)
 
     # Setup logging
     log_config = config.logging

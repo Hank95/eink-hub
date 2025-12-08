@@ -36,7 +36,7 @@ providers:
     credentials:
       api_key: ${OPENWEATHER_API_KEY}
     options:
-      location: "San Francisco,US"
+      location: "Charleston,US"
       units: imperial  # imperial | metric
 
   calendar:
@@ -157,3 +157,17 @@ layouts:
         options:
           max_events: 8
           show_time: true
+
+  week_view:
+    name: "Week View"
+    widgets:
+      - type: calendar_week
+        x: 0
+        y: 0
+        width: 800
+        height: 480
+        provider: calendar
+        options:
+          start_hour: 7
+          end_hour: 21
+          show_current_time: true

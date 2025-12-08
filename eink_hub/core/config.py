@@ -23,6 +23,14 @@ class ProviderConfig(BaseModel):
     credentials: Dict[str, str] = Field(default_factory=dict)
     options: Dict[str, Any] = Field(default_factory=dict)
 
+    @field_validator("credentials", mode="before")
+    @classmethod
+    def coerce_credentials(cls, v: Dict[str, Any]) -> Dict[str, str]:
+        """Coerce credential values to strings and filter out None values."""
+        if not isinstance(v, dict):
+            return {}
+        return {k: str(val) for k, val in v.items() if val is not None}
+
 
 class WidgetConfig(BaseModel):
     """Configuration for a widget in a layout."""
@@ -170,6 +178,17 @@ def get_config() -> AppConfig:
     if _config is None:
         raise ConfigurationError("Configuration not loaded. Call load_config() first.")
     return _config
+
+
+def set_config(config: AppConfig) -> None:
+    """
+    Manually set the global configuration.
+
+    Args:
+        config: AppConfig instance to set as the global config
+    """
+    global _config
+    _config = config
 
 
 def reload_config(path: Path = Path("config.yaml")) -> AppConfig:

@@ -48,13 +48,14 @@ class DisplayDriver:
             logger.info("Display in mock mode - skipping hardware init")
             return
 
-        if self._epd is not None:
-            return
-
         try:
             from waveshare_epd import epd7in5_V2
 
-            self._epd = epd7in5_V2.EPD()
+            if self._epd is None:
+                self._epd = epd7in5_V2.EPD()
+                logger.info("E-ink display created")
+
+            # Always call init() to wake the display from sleep
             self._epd.init()
             logger.info("E-ink display initialized")
         except ImportError:

@@ -14,7 +14,7 @@ from ..widgets.base import WidgetBounds
 from ..widgets.registry import WidgetRegistry
 
 # Import widgets to trigger registration
-from ..widgets import clock, text, weather, calendar, strava, todoist  # noqa: F401
+from ..widgets import clock, text, weather, calendar, strava, todoist, calendar_week  # noqa: F401
 
 logger = get_logger("layouts.renderer")
 
