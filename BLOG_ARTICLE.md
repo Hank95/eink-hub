@@ -1,6 +1,6 @@
 # From Dusty Raspberry Pi to Full-Stack Enlightenment: Building My Own Web Infrastructure
 
-*How a simple e-ink calendar project turned into the web development education I never knew I needed*
+_How a simple e-ink calendar project turned into the web development education I never knew I needed_
 
 ---
 
@@ -12,7 +12,7 @@ Then I did the research.
 
 SSL certificates. Port forwarding. DDoS protection. DNS configuration. Security hardening. The rabbit hole went deep, and at the bottom was a very real possibility of turning my home network into an open door for hackers. I quietly shelved the Pi and moved on.
 
-Fast forward three years. I'm now a full-stack developer professionally. I work with React, Node, databases, APIs—the whole stack. But here's the thing about professional development: you're usually working on *part* of something. You push code, it deploys somewhere magical, and users somehow reach it. The infrastructure is abstracted away. Someone else's problem.
+Fast forward three years. I'm now a full-stack developer professionally. I work with React, Node, databases, APIs—the whole stack. But here's the thing about professional development: you're usually working on _part_ of something. You push code, it deploys somewhere magical, and users somehow reach it. The infrastructure is abstracted away. Someone else's problem.
 
 Then came a cold, rainy day. I was cleaning out my closet and found it: the Raspberry Pi, still in its case, collecting dust. Something clicked.
 
@@ -22,19 +22,19 @@ The original plan was modest—embarrassingly so. I just wanted a little e-ink c
 
 But I'm a web developer now. And I had questions.
 
-*What if I want to control it from my phone?*
+_What if I want to control it from my phone?_
 
 That means a web server.
 
-*What if I want to see different views?*
+_What if I want to see different views?_
 
 That means an API and a frontend.
 
-*What if I want to add weather data?*
+_What if I want to add weather data?_
 
 That means external API calls and data persistence.
 
-*What if I want to add my own sensors?*
+_What if I want to add my own sensors?_
 
 That means... well, that means I'm building actual infrastructure.
 
@@ -45,12 +45,13 @@ The simple calendar became a dashboard. The dashboard needed a database. The dat
 Here's what I realized: my local network is the perfect learning environment. It's the web development sandbox I always wanted but never knew I had.
 
 Think about it:
+
 - **No security risks** — Nothing is exposed to the internet
 - **No costs** — No server bills, no domain fees
 - **Full control** — I own every layer of the stack
 - **Real hardware** — Not a simulation, not a tutorial, actual devices talking to each other
 
-When you're learning web development through tutorials, everything is abstract. "The client makes a request to the server." Cool, but what does that *actually look like*? What happens in between?
+When you're learning web development through tutorials, everything is abstract. "The client makes a request to the server." Cool, but what does that _actually look like_? What happens in between?
 
 Building this project, I finally understood. I could watch my ESP32 send an HTTP POST, see it hit my FastAPI server, watch it write to SQLite, then pull it back out through a GET request and render it in a chart. The full loop, visible and tangible.
 
@@ -103,6 +104,7 @@ GPIO22  ───►   SCL
 ### The Code
 
 The ESP32 runs Arduino code that:
+
 1. Connects to WiFi
 2. Reads the DHT11 sensor every 2 seconds
 3. Displays current readings on the OLED
@@ -193,6 +195,7 @@ Flash this to your ESP32, and it'll start sending data to your Pi every minute.
 ## Part 2: The Server (Raspberry Pi + FastAPI)
 
 The Raspberry Pi is the brains of the operation. It runs a Python web server that:
+
 - Receives sensor data via HTTP POST
 - Stores readings in SQLite
 - Serves a web dashboard
@@ -339,70 +342,78 @@ The dashboard is a single HTML file with embedded CSS and JavaScript. No build t
 <!-- static/sensors.html (simplified) -->
 <!DOCTYPE html>
 <html>
-<head>
-  <title>Sensor History</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-</head>
-<body>
-  <h1>Indoor Sensor History</h1>
+  <head>
+    <title>Sensor History</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  </head>
+  <body>
+    <h1>Indoor Sensor History</h1>
 
-  <div class="current-readings">
-    <div class="reading-card">
-      <div class="reading-value" id="current-temp">--</div>
-      <div class="reading-label">Temperature</div>
+    <div class="current-readings">
+      <div class="reading-card">
+        <div class="reading-value" id="current-temp">--</div>
+        <div class="reading-label">Temperature</div>
+      </div>
+      <div class="reading-card">
+        <div class="reading-value" id="current-humidity">--</div>
+        <div class="reading-label">Humidity</div>
+      </div>
     </div>
-    <div class="reading-card">
-      <div class="reading-value" id="current-humidity">--</div>
-      <div class="reading-label">Humidity</div>
-    </div>
-  </div>
 
-  <canvas id="tempChart"></canvas>
+    <canvas id="tempChart"></canvas>
 
-  <script>
-    let tempChart;
+    <script>
+      let tempChart;
 
-    async function fetchData() {
-      // Get current reading
-      const current = await fetch('/api/sensor-data').then(r => r.json());
-      document.getElementById('current-temp').textContent = `${current.temperature_f}°F`;
-      document.getElementById('current-humidity').textContent = `${current.humidity}%`;
+      async function fetchData() {
+        // Get current reading
+        const current = await fetch("/api/sensor-data").then((r) => r.json());
+        document.getElementById(
+          "current-temp"
+        ).textContent = `${current.temperature_f}°F`;
+        document.getElementById(
+          "current-humidity"
+        ).textContent = `${current.humidity}%`;
 
-      // Get history for chart
-      const history = await fetch('/api/sensor-data/history?hours=24').then(r => r.json());
+        // Get history for chart
+        const history = await fetch("/api/sensor-data/history?hours=24").then(
+          (r) => r.json()
+        );
 
-      const chartData = history.readings.reverse().map(r => ({
-        x: new Date(r.timestamp),
-        y: (r.temperature_c * 9/5) + 32
-      }));
+        const chartData = history.readings.reverse().map((r) => ({
+          x: new Date(r.timestamp),
+          y: (r.temperature_c * 9) / 5 + 32,
+        }));
 
-      tempChart.data.datasets[0].data = chartData;
-      tempChart.update();
-    }
-
-    // Initialize chart
-    tempChart = new Chart(document.getElementById('tempChart'), {
-      type: 'line',
-      data: {
-        datasets: [{
-          label: 'Temperature (°F)',
-          data: [],
-          borderColor: '#e74c3c',
-          fill: true
-        }]
-      },
-      options: {
-        scales: {
-          x: { type: 'time' }
-        }
+        tempChart.data.datasets[0].data = chartData;
+        tempChart.update();
       }
-    });
 
-    // Fetch data now and every 30 seconds
-    fetchData();
-    setInterval(fetchData, 30000);
-  </script>
-</body>
+      // Initialize chart
+      tempChart = new Chart(document.getElementById("tempChart"), {
+        type: "line",
+        data: {
+          datasets: [
+            {
+              label: "Temperature (°F)",
+              data: [],
+              borderColor: "#e74c3c",
+              fill: true,
+            },
+          ],
+        },
+        options: {
+          scales: {
+            x: { type: "time" },
+          },
+        },
+      });
+
+      // Fetch data now and every 30 seconds
+      fetchData();
+      setInterval(fetchData, 30000);
+    </script>
+  </body>
 </html>
 ```
 
@@ -411,6 +422,7 @@ The dashboard is a single HTML file with embedded CSS and JavaScript. No build t
 I also added a "Database Records" section that shows the raw SQLite data in a paginated table. It's hidden by default but super useful for debugging or just seeing what's happening under the hood.
 
 Features:
+
 - Toggle to show/hide
 - Configurable time range (1h to 30 days)
 - Pagination (25-250 rows per page)
@@ -499,7 +511,7 @@ The e-ink display takes about 2-3 seconds to refresh (it's e-ink, not LCD), so I
 
 ```bash
 # On the Raspberry Pi
-git clone https://github.com/yourusername/eink-hub.git
+git clone https://github.com/hp95/eink-hub.git
 cd eink-hub
 
 # Create virtual environment
@@ -539,6 +551,7 @@ WantedBy=multi-user.target
 ```
 
 Then:
+
 ```bash
 sudo systemctl enable eink-hub
 sudo systemctl start eink-hub
@@ -548,7 +561,7 @@ sudo systemctl start eink-hub
 
 After a few days of collecting data, something clicked that never quite had before in my professional work.
 
-I was sitting at my desk, looking at the temperature graph on my phone. The humidity had spiked. I knew exactly why—I had just showered. But more importantly, I knew exactly *how* I knew:
+I was sitting at my desk, looking at the temperature graph on my phone. The humidity had spiked. I knew exactly why—I had just showered. But more importantly, I knew exactly _how_ I knew:
 
 1. The DHT11 sensor detected the humidity change
 2. The ESP32 read that value and constructed a JSON payload
@@ -561,7 +574,7 @@ I was sitting at my desk, looking at the temperature graph on my phone. The humi
 9. Chart.js parsed the data and re-rendered the graph
 10. I saw the spike
 
-I've built features at work that do similar things. But I've never *seen* all of it at once. The layers are usually hidden behind deployment pipelines, managed databases, and team boundaries.
+I've built features at work that do similar things. But I've never _seen_ all of it at once. The layers are usually hidden behind deployment pipelines, managed databases, and team boundaries.
 
 Here, in my living room, I own every layer. When something breaks, I can't blame DevOps. When something works, I know exactly why.
 
@@ -604,8 +617,8 @@ Go blow the dust off. See what happens.
 
 ---
 
-*The total cost of this project was under $100. The education was priceless.*
+_The total cost of this project was under $100. The education was priceless._
 
 ---
 
-*Tags: ESP32, Raspberry Pi, E-Ink, Home Automation, Python, FastAPI, Web Development, Learning, DIY Electronics*
+_Tags: ESP32, Raspberry Pi, E-Ink, Home Automation, Python, FastAPI, Web Development, Learning, DIY Electronics_
