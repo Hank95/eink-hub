@@ -580,15 +580,15 @@ Here, in my living room, I own every layer. When something breaks, I can't blame
 
 ## The Education I Didn't Know I Needed
 
-Three years of professional development taught me how to write code. This project taught me how the web actually works.
+Three years of professional development taught me how to ship software. This project reminded me what’s actually happening underneath all the abstractions we usually work with.
 
-**HTTP isn't magic.** It's just text over a socket. When my ESP32 sends `POST /api/sensor-data HTTP/1.1`, I can literally see that string arrive in my server logs. The mystique evaporates when you watch it happen.
+**HTTP isn’t magic** — it’s just text over a socket. When the ESP32 hits my endpoint with POST /api/sensor-data HTTP/1.1, I can literally watch that raw string land in the server logs. Seeing it unmediated by frameworks makes the whole request/response loop feel simple and tangible.
 
-**Databases are just files.** SQLite is a single file on disk. I can copy it, email it, open it in a GUI tool. There's no server process, no connection strings, no managed instance. It's humbling and clarifying.
+**A database can just be a file.** SQLite lives as a single file on disk. You can copy it, inspect it, email it, open it in a GUI. No container, no cluster, no connection pool. It’s a good reminder that persistence doesn’t always need infrastructure.
 
-**Frontend and backend are the same thing.** They're both just code that runs somewhere. The browser is a runtime. Python is a runtime. They talk to each other over HTTP. That's it.
+**Frontend and backend are more alike than they seem.** At the end of the day they’re just runtimes exchanging text. The browser runs JavaScript, Python runs on the server, and they talk over HTTP. Different environments, same fundamental idea.
 
-**The "full stack" is actually full.** It goes all the way down to GPIO pins and all the way up to CSS animations. Understanding the whole thing makes you better at any part of it.
+**The “full stack” actually goes further than the diagram.** It extends down to GPIO pins and sensor data, and up to CSS animations and UI polish. Touching each layer end-to-end makes every part of the system easier to reason about.
 
 ## What's Next?
 
