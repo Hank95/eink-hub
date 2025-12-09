@@ -1,14 +1,14 @@
 {
   "display": {
-    "current_layout": "strava_dashboard",
-    "current_image": "previews/strava_dashboard.png",
-    "last_updated": "2025-12-08T17:40:09.123519",
+    "current_layout": "composite_hub",
+    "current_image": "previews/composite_hub.png",
+    "last_updated": "2025-12-08T19:11:43.544016",
     "mode": "auto_rotate",
-    "rotation_index": 1
+    "rotation_index": 0
   },
   "providers": {
     "strava": {
-      "last_fetch": "2025-12-08T16:09:59.864376",
+      "last_fetch": "2025-12-08T18:11:34.274960",
       "data": {
         "week_total_miles": 0.0,
         "weekly_miles": [
@@ -56,16 +56,16 @@
       "error": null
     },
     "weather": {
-      "last_fetch": "2025-12-08T16:10:00.379360",
+      "last_fetch": "2025-12-08T18:11:34.718771",
       "data": {
-        "current_temp": 48,
-        "feels_like": 42,
-        "high": 47,
+        "current_temp": 45,
+        "feels_like": 40,
+        "high": 45,
         "low": 44,
-        "humidity": 84,
+        "humidity": 86,
         "condition": "Clouds",
         "description": "Overcast Clouds",
-        "wind_speed": 15,
+        "wind_speed": 10,
         "temp_unit": "F",
         "wind_unit": "mph",
         "icon": "cloudy",
@@ -73,7 +73,7 @@
         "hourly": [
           {
             "time": "7pm",
-            "temp": 47,
+            "temp": 45,
             "condition": "Clouds",
             "icon": "cloudy",
             "pop": 0
@@ -87,7 +87,7 @@
           },
           {
             "time": "1am",
-            "temp": 42,
+            "temp": 43,
             "condition": "Rain",
             "icon": "rainy",
             "pop": 20
@@ -131,7 +131,7 @@
         "daily": [
           {
             "day_name": "Mon",
-            "high": 47,
+            "high": 45,
             "low": 44,
             "condition": "Clouds",
             "icon": "cloudy",
@@ -174,7 +174,7 @@
       "error": null
     },
     "calendar": {
-      "last_fetch": "2025-12-08T16:10:02.099930",
+      "last_fetch": "2025-12-08T18:11:36.505334",
       "data": {
         "today_events": [],
         "tomorrow_events": [
@@ -192,31 +192,31 @@
       "error": null
     },
     "indoor_sensor": {
-      "last_fetch": "2025-12-08T16:10:02.108602",
+      "last_fetch": "2025-12-08T18:11:36.517091",
       "data": {
         "available": true,
         "sensor_id": "esp32_dht11_1",
-        "temperature_c": 9.7,
-        "temperature_f": 49.5,
+        "temperature_c": 8.7,
+        "temperature_f": 47.7,
         "humidity": 75.0,
-        "timestamp": "2025-12-08T16:06:58.447096",
-        "age_minutes": 3,
+        "timestamp": "2025-12-08T18:10:56.858746",
+        "age_minutes": 0,
         "is_stale": false,
         "stats": {
           "hours": 24,
-          "reading_count": 195,
+          "reading_count": 273,
           "temperature": {
-            "min_c": 9.6,
+            "min_c": 8.4,
             "max_c": 23.5,
-            "avg_c": 19.4,
-            "min_f": 49.3,
+            "avg_c": 16.4,
+            "min_f": 47.1,
             "max_f": 74.3,
-            "avg_f": 66.9
+            "avg_f": 61.5
           },
           "humidity": {
             "min": 45.2,
             "max": 81.0,
-            "avg": 52.1
+            "avg": 59.1
           }
         },
         "history": [
@@ -1389,6 +1389,474 @@
             "temperature_f": 49.5,
             "humidity": 75.0,
             "timestamp": "2025-12-08 16:06:58.447096"
+          },
+          {
+            "temperature_c": 9.5,
+            "temperature_f": 49.1,
+            "humidity": 77.0,
+            "timestamp": "2025-12-08 16:10:10.144244"
+          },
+          {
+            "temperature_c": 9.5,
+            "temperature_f": 49.1,
+            "humidity": 76.0,
+            "timestamp": "2025-12-08 16:11:01.514475"
+          },
+          {
+            "temperature_c": 9.5,
+            "temperature_f": 49.1,
+            "humidity": 77.0,
+            "timestamp": "2025-12-08 16:12:03.268017"
+          },
+          {
+            "temperature_c": 9.5,
+            "temperature_f": 49.1,
+            "humidity": 77.0,
+            "timestamp": "2025-12-08 16:15:12.905642"
+          },
+          {
+            "temperature_c": 9.5,
+            "temperature_f": 49.1,
+            "humidity": 77.0,
+            "timestamp": "2025-12-08 16:16:06.298878"
+          },
+          {
+            "temperature_c": 9.4,
+            "temperature_f": 48.9,
+            "humidity": 77.0,
+            "timestamp": "2025-12-08 16:18:08.313405"
+          },
+          {
+            "temperature_c": 9.5,
+            "temperature_f": 49.1,
+            "humidity": 77.0,
+            "timestamp": "2025-12-08 16:19:14.964552"
+          },
+          {
+            "temperature_c": 9.5,
+            "temperature_f": 49.1,
+            "humidity": 77.0,
+            "timestamp": "2025-12-08 16:24:15.998615"
+          },
+          {
+            "temperature_c": 9.5,
+            "temperature_f": 49.1,
+            "humidity": 77.0,
+            "timestamp": "2025-12-08 16:31:16.274212"
+          },
+          {
+            "temperature_c": 9.4,
+            "temperature_f": 48.9,
+            "humidity": 77.0,
+            "timestamp": "2025-12-08 16:32:22.843775"
+          },
+          {
+            "temperature_c": 9.3,
+            "temperature_f": 48.7,
+            "humidity": 77.0,
+            "timestamp": "2025-12-08 16:34:18.724880"
+          },
+          {
+            "temperature_c": 9.3,
+            "temperature_f": 48.7,
+            "humidity": 77.0,
+            "timestamp": "2025-12-08 16:35:23.275985"
+          },
+          {
+            "temperature_c": 9.3,
+            "temperature_f": 48.7,
+            "humidity": 77.0,
+            "timestamp": "2025-12-08 16:39:24.746432"
+          },
+          {
+            "temperature_c": 9.3,
+            "temperature_f": 48.7,
+            "humidity": 77.0,
+            "timestamp": "2025-12-08 16:41:22.925950"
+          },
+          {
+            "temperature_c": 9.2,
+            "temperature_f": 48.6,
+            "humidity": 78.0,
+            "timestamp": "2025-12-08 16:46:31.127639"
+          },
+          {
+            "temperature_c": 9.0,
+            "temperature_f": 48.2,
+            "humidity": 77.0,
+            "timestamp": "2025-12-08 16:48:26.919330"
+          },
+          {
+            "temperature_c": 8.9,
+            "temperature_f": 48.0,
+            "humidity": 78.0,
+            "timestamp": "2025-12-08 16:49:28.561150"
+          },
+          {
+            "temperature_c": 9.0,
+            "temperature_f": 48.2,
+            "humidity": 78.0,
+            "timestamp": "2025-12-08 16:51:35.668330"
+          },
+          {
+            "temperature_c": 9.1,
+            "temperature_f": 48.4,
+            "humidity": 78.0,
+            "timestamp": "2025-12-08 16:53:31.449805"
+          },
+          {
+            "temperature_c": 9.0,
+            "temperature_f": 48.2,
+            "humidity": 78.0,
+            "timestamp": "2025-12-08 16:54:33.065777"
+          },
+          {
+            "temperature_c": 9.0,
+            "temperature_f": 48.2,
+            "humidity": 78.0,
+            "timestamp": "2025-12-08 16:55:34.751524"
+          },
+          {
+            "temperature_c": 9.0,
+            "temperature_f": 48.2,
+            "humidity": 78.0,
+            "timestamp": "2025-12-08 16:56:36.378846"
+          },
+          {
+            "temperature_c": 9.0,
+            "temperature_f": 48.2,
+            "humidity": 77.0,
+            "timestamp": "2025-12-08 16:57:37.993069"
+          },
+          {
+            "temperature_c": 9.0,
+            "temperature_f": 48.2,
+            "humidity": 77.0,
+            "timestamp": "2025-12-08 16:58:39.865949"
+          },
+          {
+            "temperature_c": 9.0,
+            "temperature_f": 48.2,
+            "humidity": 77.0,
+            "timestamp": "2025-12-08 16:59:41.565473"
+          },
+          {
+            "temperature_c": 8.9,
+            "temperature_f": 48.0,
+            "humidity": 77.0,
+            "timestamp": "2025-12-08 17:01:43.595201"
+          },
+          {
+            "temperature_c": 8.9,
+            "temperature_f": 48.0,
+            "humidity": 77.0,
+            "timestamp": "2025-12-08 17:02:45.243549"
+          },
+          {
+            "temperature_c": 8.8,
+            "temperature_f": 47.8,
+            "humidity": 77.0,
+            "timestamp": "2025-12-08 17:03:46.848372"
+          },
+          {
+            "temperature_c": 8.7,
+            "temperature_f": 47.7,
+            "humidity": 77.0,
+            "timestamp": "2025-12-08 17:04:48.678018"
+          },
+          {
+            "temperature_c": 8.7,
+            "temperature_f": 47.7,
+            "humidity": 78.0,
+            "timestamp": "2025-12-08 17:05:53.104283"
+          },
+          {
+            "temperature_c": 8.7,
+            "temperature_f": 47.7,
+            "humidity": 78.0,
+            "timestamp": "2025-12-08 17:06:53.601710"
+          },
+          {
+            "temperature_c": 8.7,
+            "temperature_f": 47.7,
+            "humidity": 78.0,
+            "timestamp": "2025-12-08 17:07:51.623610"
+          },
+          {
+            "temperature_c": 8.7,
+            "temperature_f": 47.7,
+            "humidity": 78.0,
+            "timestamp": "2025-12-08 17:08:53.239216"
+          },
+          {
+            "temperature_c": 8.8,
+            "temperature_f": 47.8,
+            "humidity": 78.0,
+            "timestamp": "2025-12-08 17:09:54.991138"
+          },
+          {
+            "temperature_c": 8.8,
+            "temperature_f": 47.8,
+            "humidity": 78.0,
+            "timestamp": "2025-12-08 17:10:55.367358"
+          },
+          {
+            "temperature_c": 8.9,
+            "temperature_f": 48.0,
+            "humidity": 78.0,
+            "timestamp": "2025-12-08 17:11:56.990003"
+          },
+          {
+            "temperature_c": 8.9,
+            "temperature_f": 48.0,
+            "humidity": 78.0,
+            "timestamp": "2025-12-08 17:14:04.007053"
+          },
+          {
+            "temperature_c": 8.9,
+            "temperature_f": 48.0,
+            "humidity": 77.0,
+            "timestamp": "2025-12-08 17:15:02.317484"
+          },
+          {
+            "temperature_c": 8.9,
+            "temperature_f": 48.0,
+            "humidity": 77.0,
+            "timestamp": "2025-12-08 17:16:00.237468"
+          },
+          {
+            "temperature_c": 8.9,
+            "temperature_f": 48.0,
+            "humidity": 77.0,
+            "timestamp": "2025-12-08 17:17:01.434610"
+          },
+          {
+            "temperature_c": 8.9,
+            "temperature_f": 48.0,
+            "humidity": 77.0,
+            "timestamp": "2025-12-08 17:18:03.093940"
+          },
+          {
+            "temperature_c": 8.9,
+            "temperature_f": 48.0,
+            "humidity": 76.0,
+            "timestamp": "2025-12-08 17:20:11.196714"
+          },
+          {
+            "temperature_c": 8.9,
+            "temperature_f": 48.0,
+            "humidity": 76.0,
+            "timestamp": "2025-12-08 17:21:07.771628"
+          },
+          {
+            "temperature_c": 8.9,
+            "temperature_f": 48.0,
+            "humidity": 76.0,
+            "timestamp": "2025-12-08 17:22:07.777098"
+          },
+          {
+            "temperature_c": 8.8,
+            "temperature_f": 47.8,
+            "humidity": 76.0,
+            "timestamp": "2025-12-08 17:23:08.132708"
+          },
+          {
+            "temperature_c": 8.8,
+            "temperature_f": 47.8,
+            "humidity": 76.0,
+            "timestamp": "2025-12-08 17:24:10.231781"
+          },
+          {
+            "temperature_c": 8.7,
+            "temperature_f": 47.7,
+            "humidity": 76.0,
+            "timestamp": "2025-12-08 17:25:13.025835"
+          },
+          {
+            "temperature_c": 8.7,
+            "temperature_f": 47.7,
+            "humidity": 76.0,
+            "timestamp": "2025-12-08 17:26:13.765506"
+          },
+          {
+            "temperature_c": 8.8,
+            "temperature_f": 47.8,
+            "humidity": 76.0,
+            "timestamp": "2025-12-08 17:27:16.116908"
+          },
+          {
+            "temperature_c": 8.6,
+            "temperature_f": 47.5,
+            "humidity": 76.0,
+            "timestamp": "2025-12-08 17:30:16.468518"
+          },
+          {
+            "temperature_c": 8.6,
+            "temperature_f": 47.5,
+            "humidity": 76.0,
+            "timestamp": "2025-12-08 17:33:18.927343"
+          },
+          {
+            "temperature_c": 8.7,
+            "temperature_f": 47.7,
+            "humidity": 76.0,
+            "timestamp": "2025-12-08 17:34:20.581232"
+          },
+          {
+            "temperature_c": 8.7,
+            "temperature_f": 47.7,
+            "humidity": 76.0,
+            "timestamp": "2025-12-08 17:35:22.936409"
+          },
+          {
+            "temperature_c": 8.8,
+            "temperature_f": 47.8,
+            "humidity": 76.0,
+            "timestamp": "2025-12-08 17:37:22.937637"
+          },
+          {
+            "temperature_c": 8.9,
+            "temperature_f": 48.0,
+            "humidity": 75.0,
+            "timestamp": "2025-12-08 17:38:24.627270"
+          },
+          {
+            "temperature_c": 8.8,
+            "temperature_f": 47.8,
+            "humidity": 75.0,
+            "timestamp": "2025-12-08 17:39:31.206227"
+          },
+          {
+            "temperature_c": 8.7,
+            "temperature_f": 47.7,
+            "humidity": 74.0,
+            "timestamp": "2025-12-08 17:40:26.684273"
+          },
+          {
+            "temperature_c": 8.7,
+            "temperature_f": 47.7,
+            "humidity": 74.0,
+            "timestamp": "2025-12-08 17:41:29.300516"
+          },
+          {
+            "temperature_c": 8.7,
+            "temperature_f": 47.7,
+            "humidity": 74.0,
+            "timestamp": "2025-12-08 17:42:28.889551"
+          },
+          {
+            "temperature_c": 8.7,
+            "temperature_f": 47.7,
+            "humidity": 74.0,
+            "timestamp": "2025-12-08 17:43:30.524911"
+          },
+          {
+            "temperature_c": 8.7,
+            "temperature_f": 47.7,
+            "humidity": 74.0,
+            "timestamp": "2025-12-08 17:44:32.168309"
+          },
+          {
+            "temperature_c": 8.6,
+            "temperature_f": 47.5,
+            "humidity": 75.0,
+            "timestamp": "2025-12-08 17:45:33.787553"
+          },
+          {
+            "temperature_c": 8.6,
+            "temperature_f": 47.5,
+            "humidity": 75.0,
+            "timestamp": "2025-12-08 17:46:35.420182"
+          },
+          {
+            "temperature_c": 8.7,
+            "temperature_f": 47.7,
+            "humidity": 76.0,
+            "timestamp": "2025-12-08 17:49:40.650280"
+          },
+          {
+            "temperature_c": 8.6,
+            "temperature_f": 47.5,
+            "humidity": 76.0,
+            "timestamp": "2025-12-08 17:51:42.647144"
+          },
+          {
+            "temperature_c": 8.5,
+            "temperature_f": 47.3,
+            "humidity": 76.0,
+            "timestamp": "2025-12-08 17:52:43.102189"
+          },
+          {
+            "temperature_c": 8.4,
+            "temperature_f": 47.1,
+            "humidity": 77.0,
+            "timestamp": "2025-12-08 17:53:40.665803"
+          },
+          {
+            "temperature_c": 8.4,
+            "temperature_f": 47.1,
+            "humidity": 77.0,
+            "timestamp": "2025-12-08 17:54:42.417673"
+          },
+          {
+            "temperature_c": 8.4,
+            "temperature_f": 47.1,
+            "humidity": 77.0,
+            "timestamp": "2025-12-08 17:55:49.163051"
+          },
+          {
+            "temperature_c": 8.4,
+            "temperature_f": 47.1,
+            "humidity": 77.0,
+            "timestamp": "2025-12-08 17:57:52.852611"
+          },
+          {
+            "temperature_c": 8.5,
+            "temperature_f": 47.3,
+            "humidity": 77.0,
+            "timestamp": "2025-12-08 17:59:46.664383"
+          },
+          {
+            "temperature_c": 8.5,
+            "temperature_f": 47.3,
+            "humidity": 77.0,
+            "timestamp": "2025-12-08 18:00:48.476149"
+          },
+          {
+            "temperature_c": 8.5,
+            "temperature_f": 47.3,
+            "humidity": 77.0,
+            "timestamp": "2025-12-08 18:01:55.134494"
+          },
+          {
+            "temperature_c": 8.5,
+            "temperature_f": 47.3,
+            "humidity": 76.0,
+            "timestamp": "2025-12-08 18:04:51.338558"
+          },
+          {
+            "temperature_c": 8.6,
+            "temperature_f": 47.5,
+            "humidity": 76.0,
+            "timestamp": "2025-12-08 18:05:52.949142"
+          },
+          {
+            "temperature_c": 8.6,
+            "temperature_f": 47.5,
+            "humidity": 76.0,
+            "timestamp": "2025-12-08 18:06:54.776314"
+          },
+          {
+            "temperature_c": 8.7,
+            "temperature_f": 47.7,
+            "humidity": 76.0,
+            "timestamp": "2025-12-08 18:10:01.281223"
+          },
+          {
+            "temperature_c": 8.7,
+            "temperature_f": 47.7,
+            "humidity": 75.0,
+            "timestamp": "2025-12-08 18:10:56.858746"
           }
         ],
         "sensors": [
