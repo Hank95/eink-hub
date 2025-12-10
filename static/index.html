@@ -176,6 +176,165 @@
       .nav-link:hover {
         text-decoration: underline;
       }
+      /* Image Gallery Styles */
+      .gallery-section {
+        margin-top: 24px;
+      }
+      .gallery-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+      .gallery-header h2 {
+        margin: 0;
+        border: none;
+        padding: 0;
+      }
+      .gallery-controls {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .gallery-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 12px;
+        margin-bottom: 20px;
+      }
+      .gallery-item {
+        aspect-ratio: 4/3;
+        border: 2px solid #ddd;
+        border-radius: 6px;
+        overflow: hidden;
+        cursor: pointer;
+        transition: border-color 0.2s, transform 0.2s;
+        background: #f0f0f0;
+      }
+      .gallery-item:hover {
+        border-color: #888;
+        transform: scale(1.02);
+      }
+      .gallery-item.selected {
+        border-color: #333;
+        border-width: 3px;
+      }
+      .gallery-item img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      .gallery-empty {
+        grid-column: 1 / -1;
+        text-align: center;
+        padding: 40px;
+        color: #888;
+        font-style: italic;
+      }
+      .image-preview-section {
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 16px;
+        margin-top: 16px;
+      }
+      .image-preview-section h3 {
+        margin-top: 0;
+        margin-bottom: 12px;
+      }
+      .image-preview-container {
+        text-align: center;
+        background: #f5f5f5;
+        border-radius: 4px;
+        padding: 8px;
+        margin-bottom: 16px;
+      }
+      .image-preview-container img {
+        max-width: 100%;
+        border: 1px solid #ccc;
+      }
+      .image-controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        align-items: center;
+        margin-bottom: 16px;
+      }
+      .control-group {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .control-group label {
+        font-weight: 500;
+        font-size: 0.9rem;
+      }
+      .rotation-buttons {
+        display: flex;
+        gap: 4px;
+      }
+      .rotation-buttons button {
+        padding: 6px 12px;
+        font-size: 0.85rem;
+      }
+      .rotation-buttons button.active {
+        background: #333;
+        color: white;
+      }
+      .fit-mode-buttons {
+        display: flex;
+        gap: 4px;
+      }
+      .fit-mode-buttons button {
+        padding: 6px 12px;
+        font-size: 0.85rem;
+      }
+      .fit-mode-buttons button.active {
+        background: #333;
+        color: white;
+      }
+      .image-actions {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+      .image-actions button {
+        padding: 10px 20px;
+      }
+      .btn-primary {
+        background: #333;
+        color: white;
+        border-color: #333;
+      }
+      .btn-primary:hover {
+        background: #444;
+      }
+      .btn-danger {
+        background: #fff;
+        color: #d32f2f;
+        border-color: #d32f2f;
+      }
+      .btn-danger:hover {
+        background: #ffebee;
+      }
+      .upload-section {
+        margin-top: 16px;
+        padding-top: 16px;
+        border-top: 1px solid #eee;
+      }
+      .upload-form {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      .image-info {
+        font-size: 0.85rem;
+        color: #666;
+        margin-top: 8px;
+      }
     </style>
   </head>
   <body>
@@ -212,6 +371,67 @@
       <h2>Data Providers</h2>
       <div class="provider-list" id="providers-list">
         <!-- Providers will be populated dynamically -->
+      </div>
+    </div>
+
+    <!-- Image Gallery Section -->
+    <div class="gallery-section">
+      <div class="gallery-header">
+        <h2>Photo Gallery</h2>
+        <div class="gallery-controls">
+          <label>
+            <input type="checkbox" id="photo-auto-rotate" onchange="togglePhotoAutoRotate()" />
+            Auto-Rotate Photos
+          </label>
+        </div>
+      </div>
+
+      <div class="gallery-grid" id="gallery-grid">
+        <!-- Images will be populated dynamically -->
+      </div>
+
+      <!-- Image Preview Panel (shown when image selected) -->
+      <div class="image-preview-section" id="image-preview-section" style="display: none;">
+        <h3>Preview: <span id="selected-image-name"></span></h3>
+
+        <div class="image-preview-container">
+          <img id="image-preview" alt="Monochrome Preview" />
+        </div>
+
+        <div class="image-controls">
+          <div class="control-group">
+            <label>Rotation:</label>
+            <div class="rotation-buttons">
+              <button onclick="setRotation(0)" id="rot-0" class="active">0°</button>
+              <button onclick="setRotation(90)" id="rot-90">90°</button>
+              <button onclick="setRotation(180)" id="rot-180">180°</button>
+              <button onclick="setRotation(270)" id="rot-270">270°</button>
+            </div>
+          </div>
+
+          <div class="control-group">
+            <label>Fit Mode:</label>
+            <div class="fit-mode-buttons">
+              <button onclick="setFitMode('fit')" id="fit-fit" class="active">Fit (letterbox)</button>
+              <button onclick="setFitMode('fill')" id="fit-fill">Fill (crop)</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="image-info" id="image-info"></div>
+
+        <div class="image-actions">
+          <button class="btn-primary" onclick="sendImageToDisplay()">Send to Display</button>
+          <button class="btn-danger" onclick="deleteSelectedImage()">Delete Image</button>
+        </div>
+      </div>
+
+      <!-- Upload Section -->
+      <div class="upload-section">
+        <form class="upload-form" id="gallery-upload-form" onsubmit="uploadNewImage(event)">
+          <input type="file" name="file" accept="image/*" required />
+          <button type="submit">Upload Image</button>
+        </form>
       </div>
     </div>
 
@@ -279,19 +499,6 @@
             <button onclick="setLayout('${layout}')">Send to Display</button>
           </div>
         `).join('');
-
-        // Add photo frame card
-        grid.innerHTML += `
-          <div class="card">
-            <h3>Photo Frame</h3>
-            <p>Upload and display a photo.</p>
-            <form id="upload-form" onsubmit="uploadPhoto(event)">
-              <input type="file" name="file" accept="image/*" required /><br /><br />
-              <input type="text" name="caption" placeholder="Caption (optional)" /><br /><br />
-              <button type="submit">Upload & Show</button>
-            </form>
-          </div>
-        `;
       }
 
       function formatLayoutName(name) {
@@ -352,39 +559,215 @@
         }
       }
 
-      async function uploadPhoto(e) {
+      // ========================================
+      // Image Gallery Functions
+      // ========================================
+
+      let galleryImages = [];
+      let selectedImage = null;
+      let currentRotation = 0;
+      let currentFitMode = 'fit';
+
+      async function loadGallery() {
+        try {
+          const res = await fetch('/api/images');
+          const data = await res.json();
+          galleryImages = data.images || [];
+          renderGallery();
+        } catch (e) {
+          console.error('Failed to load gallery:', e);
+        }
+      }
+
+      function renderGallery() {
+        const grid = document.getElementById('gallery-grid');
+
+        if (galleryImages.length === 0) {
+          grid.innerHTML = '<div class="gallery-empty">No images uploaded yet. Upload an image to get started.</div>';
+          return;
+        }
+
+        grid.innerHTML = galleryImages.map(img => `
+          <div class="gallery-item ${selectedImage && selectedImage.filename === img.filename ? 'selected' : ''}"
+               onclick="selectImage('${img.filename}')"
+               title="${img.filename}">
+            <img src="/api/images/${encodeURIComponent(img.filename)}/thumbnail"
+                 alt="${img.filename}"
+                 onerror="this.src='/api/images/${encodeURIComponent(img.filename)}'" />
+          </div>
+        `).join('');
+      }
+
+      async function selectImage(filename) {
+        selectedImage = galleryImages.find(img => img.filename === filename);
+        if (!selectedImage) return;
+
+        // Reset controls
+        currentRotation = 0;
+        currentFitMode = 'fit';
+
+        // Update UI
+        document.getElementById('selected-image-name').textContent = filename;
+        document.getElementById('image-preview-section').style.display = 'block';
+
+        // Update button states
+        updateRotationButtons();
+        updateFitModeButtons();
+
+        // Show image info
+        const info = document.getElementById('image-info');
+        const sizeKB = Math.round(selectedImage.size_bytes / 1024);
+        info.textContent = `${selectedImage.width} x ${selectedImage.height} px | ${sizeKB} KB`;
+
+        // Update gallery selection
+        renderGallery();
+
+        // Load preview
+        await updatePreview();
+      }
+
+      async function updatePreview() {
+        if (!selectedImage) return;
+
+        const previewImg = document.getElementById('image-preview');
+        previewImg.style.opacity = '0.5';
+
+        try {
+          const res = await fetch('/api/images/preview', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              image_path: selectedImage.path,
+              rotation: currentRotation,
+              fit_mode: currentFitMode
+            })
+          });
+
+          if (res.ok) {
+            const blob = await res.blob();
+            previewImg.src = URL.createObjectURL(blob);
+          }
+        } catch (e) {
+          console.error('Failed to generate preview:', e);
+        } finally {
+          previewImg.style.opacity = '1';
+        }
+      }
+
+      function setRotation(degrees) {
+        currentRotation = degrees;
+        updateRotationButtons();
+        updatePreview();
+      }
+
+      function updateRotationButtons() {
+        [0, 90, 180, 270].forEach(deg => {
+          const btn = document.getElementById(`rot-${deg}`);
+          btn.classList.toggle('active', deg === currentRotation);
+        });
+      }
+
+      function setFitMode(mode) {
+        currentFitMode = mode;
+        updateFitModeButtons();
+        updatePreview();
+      }
+
+      function updateFitModeButtons() {
+        document.getElementById('fit-fit').classList.toggle('active', currentFitMode === 'fit');
+        document.getElementById('fit-fill').classList.toggle('active', currentFitMode === 'fill');
+      }
+
+      async function sendImageToDisplay() {
+        if (!selectedImage) return;
+
+        try {
+          const res = await fetch('/api/images/display', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              image_path: selectedImage.path,
+              rotation: currentRotation,
+              fit_mode: currentFitMode
+            })
+          });
+
+          if (res.ok) {
+            await refreshStatus();
+            alert('Image sent to display!');
+          } else {
+            const err = await res.json();
+            alert('Failed to send image: ' + (err.detail || 'Unknown error'));
+          }
+        } catch (e) {
+          console.error('Failed to send image to display:', e);
+          alert('Failed to send image to display');
+        }
+      }
+
+      async function deleteSelectedImage() {
+        if (!selectedImage) return;
+
+        if (!confirm(`Delete "${selectedImage.filename}"?`)) return;
+
+        try {
+          const res = await fetch(`/api/images/${encodeURIComponent(selectedImage.filename)}`, {
+            method: 'DELETE'
+          });
+
+          if (res.ok) {
+            selectedImage = null;
+            document.getElementById('image-preview-section').style.display = 'none';
+            await loadGallery();
+          } else {
+            alert('Failed to delete image');
+          }
+        } catch (e) {
+          console.error('Failed to delete image:', e);
+          alert('Failed to delete image');
+        }
+      }
+
+      async function uploadNewImage(e) {
         e.preventDefault();
         const form = e.target;
         const formData = new FormData(form);
 
         try {
-          const uploadRes = await fetch('/api/upload', {
+          const res = await fetch('/api/upload', {
             method: 'POST',
             body: formData
           });
-          const uploadData = await uploadRes.json();
 
-          await fetch('/api/display', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              layout: 'photo_frame',
-              options: {
-                photo_path: uploadData.image_path,
-                caption: uploadData.caption || ''
-              }
-            })
-          });
-
-          form.reset();
-          await refreshStatus();
+          if (res.ok) {
+            const data = await res.json();
+            form.reset();
+            await loadGallery();
+            // Auto-select the newly uploaded image
+            const filename = data.image_path.split('/').pop();
+            selectImage(filename);
+          } else {
+            alert('Failed to upload image');
+          }
         } catch (e) {
-          console.error('Failed to upload photo:', e);
+          console.error('Failed to upload image:', e);
+          alert('Failed to upload image');
+        }
+      }
+
+      function togglePhotoAutoRotate() {
+        const checkbox = document.getElementById('photo-auto-rotate');
+        // TODO: Implement auto-rotate mode for photos
+        // This would require backend support to cycle through uploaded images
+        if (checkbox.checked) {
+          alert('Photo auto-rotate will cycle through your uploaded images on the display. (Feature coming soon!)');
+          checkbox.checked = false;
         }
       }
 
       // Initial load
       refreshStatus();
+      loadGallery();
 
       // Refresh every 15 seconds
       setInterval(refreshStatus, 15000);

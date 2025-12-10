@@ -119,3 +119,48 @@ class SensorReadingResponse(BaseModel):
     age_minutes: Optional[int] = None
     is_stale: Optional[bool] = None
     error: Optional[str] = None
+
+
+# ============================================================================
+# Image Gallery Models
+# ============================================================================
+
+
+class ImageInfo(BaseModel):
+    """Metadata for an uploaded image."""
+
+    filename: str
+    path: str
+    size_bytes: int
+    width: int
+    height: int
+    uploaded_at: str
+
+
+class ImageListResponse(BaseModel):
+    """Response listing uploaded images."""
+
+    images: List[ImageInfo]
+
+
+class ImagePreviewRequest(BaseModel):
+    """Request to generate an image preview."""
+
+    image_path: str
+    rotation: int = 0  # 0, 90, 180, 270
+    fit_mode: str = "fit"  # "fit" or "fill"
+
+
+class ImageDisplayRequest(BaseModel):
+    """Request to display an image on the e-ink display."""
+
+    image_path: str
+    rotation: int = 0
+    fit_mode: str = "fit"
+
+
+class ImageDisplayResponse(BaseModel):
+    """Response after displaying an image."""
+
+    status: str = "ok"
+    image_path: str

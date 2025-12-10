@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from fastapi import APIRouter, BackgroundTasks, HTTPException, UploadFile, File, Form
+from fastapi import APIRouter, BackgroundTasks, HTTPException, UploadFile, File, Form, Response
 from fastapi.responses import FileResponse
 
 from ..core.config import get_config, reload_config
@@ -23,6 +23,11 @@ from .models import (
     SensorDataRequest,
     SensorDataResponse,
     SensorReadingResponse,
+    ImageInfo,
+    ImageListResponse,
+    ImagePreviewRequest,
+    ImageDisplayRequest,
+    ImageDisplayResponse,
 )
 
 if TYPE_CHECKING:
@@ -393,3 +398,145 @@ async def list_sensors():
     except Exception as e:
         logger.error(f"Failed to list sensors: {e}")
         raise HTTPException(500, f"Failed to list sensors: {e}")
+
+
+# ============================================================================
+# Image Gallery Endpoints
+# ============================================================================
+
+
+@router.get("/images", response_model=ImageListResponse)
+async def list_images():
+    """List all uploaded images with metadata."""
+    from ..core.image_processor import list_images as get_images
+
+    try:
+        images_data = get_images(UPLOAD_DIR)
+        images = [ImageInfo(**img) for img in images_data]
+        return ImageListResponse(images=images)
+    except Exception as e:
+        logger.error(f"Failed to list images: {e}")
+        raise HTTPException(500, f"Failed to list images: {e}")
+
+
+@router.get("/images/{filename}")
+async def get_image(filename: str):
+    """Get an uploaded image file."""
+    file_path = UPLOAD_DIR / filename
+
+    if not file_path.exists():
+        raise HTTPException(404, f"Image not found: {filename}")
+
+    # Determine media type
+    suffix = file_path.suffix.lower()
+    media_types = {
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".png": "image/png",
+        ".gif": "image/gif",
+        ".bmp": "image/bmp",
+        ".webp": "image/webp",
+    }
+    media_type = media_types.get(suffix, "application/octet-stream")
+
+    return FileResponse(file_path, media_type=media_type)
+
+
+@router.get("/images/{filename}/thumbnail")
+async def get_image_thumbnail(filename: str):
+    """Get a thumbnail for an uploaded image."""
+    from ..core.image_processor import generate_thumbnail
+
+    file_path = UPLOAD_DIR / filename
+
+    if not file_path.exists():
+        raise HTTPException(404, f"Image not found: {filename}")
+
+    try:
+        thumbnail_bytes = generate_thumbnail(file_path)
+        return Response(content=thumbnail_bytes, media_type="image/jpeg")
+    except Exception as e:
+        logger.error(f"Failed to generate thumbnail: {e}")
+        raise HTTPException(500, f"Failed to generate thumbnail: {e}")
+
+
+@router.delete("/images/{filename}")
+async def delete_image(filename: str):
+    """Delete an uploaded image."""
+    file_path = UPLOAD_DIR / filename
+
+    if not file_path.exists():
+        raise HTTPException(404, f"Image not found: {filename}")
+
+    try:
+        file_path.unlink()
+        logger.info(f"Deleted image: {filename}")
+        return SuccessResponse(status="ok", message=f"Deleted {filename}")
+    except Exception as e:
+        logger.error(f"Failed to delete image: {e}")
+        raise HTTPException(500, f"Failed to delete image: {e}")
+
+
+@router.post("/images/preview")
+async def preview_image(req: ImagePreviewRequest):
+    """Generate a monochrome preview of an image with rotation and fit options."""
+    from ..core.image_processor import generate_preview
+
+    file_path = Path(req.image_path)
+
+    if not file_path.exists():
+        raise HTTPException(404, f"Image not found: {req.image_path}")
+
+    # Validate rotation
+    if req.rotation not in (0, 90, 180, 270):
+        raise HTTPException(400, "Rotation must be 0, 90, 180, or 270")
+
+    # Validate fit mode
+    if req.fit_mode not in ("fit", "fill"):
+        raise HTTPException(400, "Fit mode must be 'fit' or 'fill'")
+
+    try:
+        preview_bytes = generate_preview(file_path, req.rotation, req.fit_mode)
+        return Response(content=preview_bytes, media_type="image/png")
+    except Exception as e:
+        logger.error(f"Failed to generate preview: {e}")
+        raise HTTPException(500, f"Failed to generate preview: {e}")
+
+
+@router.post("/images/display", response_model=ImageDisplayResponse)
+async def display_image(req: ImageDisplayRequest, background_tasks: BackgroundTasks):
+    """Process and display an image on the e-ink display."""
+    from ..core.image_processor import save_processed_image
+
+    file_path = Path(req.image_path)
+
+    if not file_path.exists():
+        raise HTTPException(404, f"Image not found: {req.image_path}")
+
+    # Validate rotation
+    if req.rotation not in (0, 90, 180, 270):
+        raise HTTPException(400, "Rotation must be 0, 90, 180, or 270")
+
+    # Validate fit mode
+    if req.fit_mode not in ("fit", "fill"):
+        raise HTTPException(400, "Fit mode must be 'fit' or 'fill'")
+
+    try:
+        # Process and save image
+        output_path = Path("previews") / "photo_frame.png"
+        save_processed_image(file_path, output_path, req.rotation, req.fit_mode)
+
+        # Send to display in background
+        background_tasks.add_task(
+            _display_driver.send_to_display,
+            output_path,
+            "photo_frame",
+            {"image_path": req.image_path, "rotation": req.rotation, "fit_mode": req.fit_mode},
+        )
+
+        logger.info(f"Image display request: {req.image_path}")
+
+        return ImageDisplayResponse(status="ok", image_path=str(output_path))
+    except Exception as e:
+        logger.error(f"Failed to display image: {e}")
+        raise HTTPException(500, f"Failed to display image: {e}")
