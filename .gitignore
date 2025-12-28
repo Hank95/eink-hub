@@ -17,9 +17,10 @@ previews/
 *.log
 logs/
 
-# State files
+# State and data files
 state.json
 strava_token.json
+*.db
 
 # Raspberry Pi specific backups
 *.swp
