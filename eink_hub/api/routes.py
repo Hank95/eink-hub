@@ -279,15 +279,19 @@ async def upload_image(
 @router.post("/weather", response_model=SensorDataResponse, include_in_schema=False)
 async def receive_sensor_data(data: SensorDataRequest):
     """
-    Receive sensor data from ESP32 DHT11 sensor.
+    Receive sensor data from ESP32 sensor (DHT11 or BME280).
 
     Also aliased as POST /api/weather for ESP32 compatibility.
 
-    Expected JSON payload:
+    Expected JSON payload (BME280):
     {
         "temperature_c": 23.5,
         "humidity": 45.2,
-        "sensor_id": "esp32_dht11_1"
+        "pressure_hpa": 1013.25,
+        "dew_point_c": 12.3,
+        "uptime_s": 3600,
+        "boot_count": 5,
+        "sensor_id": "esp32_bme280_1"
     }
     """
     try:
@@ -296,12 +300,23 @@ async def receive_sensor_data(data: SensorDataRequest):
             sensor_id=data.sensor_id,
             temperature_c=data.temperature_c,
             humidity=data.humidity,
+            pressure_hpa=data.pressure_hpa,
+            dew_point_c=data.dew_point_c,
+            uptime_s=data.uptime_s,
+            boot_count=data.boot_count,
         )
 
-        logger.info(
-            f"Sensor data received from {data.sensor_id}: "
-            f"{data.temperature_c}°C, {data.humidity}%"
-        )
+        # Log with pressure if BME280 sensor
+        if data.pressure_hpa is not None:
+            logger.info(
+                f"Sensor data received from {data.sensor_id}: "
+                f"{data.temperature_c}°C, {data.humidity}%, {data.pressure_hpa}hPa"
+            )
+        else:
+            logger.info(
+                f"Sensor data received from {data.sensor_id}: "
+                f"{data.temperature_c}°C, {data.humidity}%"
+            )
 
         return SensorDataResponse(
             status="ok",
@@ -309,6 +324,8 @@ async def receive_sensor_data(data: SensorDataRequest):
             sensor_id=data.sensor_id,
             temperature_c=data.temperature_c,
             humidity=data.humidity,
+            pressure_hpa=data.pressure_hpa,
+            dew_point_c=data.dew_point_c,
         )
     except Exception as e:
         logger.error(f"Failed to store sensor data: {e}")
@@ -344,6 +361,13 @@ async def get_sensor_data(sensor_id: str = None):
         temp_c = reading["temperature_c"]
         temp_f = (temp_c * 9 / 5) + 32
 
+        # Handle optional BME280 fields
+        pressure_hpa = reading.get("pressure_hpa")
+        dew_point_c = reading.get("dew_point_c")
+        dew_point_f = (dew_point_c * 9 / 5) + 32 if dew_point_c is not None else None
+        uptime_s = reading.get("uptime_s")
+        boot_count = reading.get("boot_count")
+
         return SensorReadingResponse(
             available=True,
             sensor_id=reading["sensor_id"],
@@ -353,6 +377,11 @@ async def get_sensor_data(sensor_id: str = None):
             timestamp=timestamp.isoformat(),
             age_minutes=age_minutes,
             is_stale=is_stale,
+            pressure_hpa=round(pressure_hpa, 1) if pressure_hpa else None,
+            dew_point_c=round(dew_point_c, 1) if dew_point_c else None,
+            dew_point_f=round(dew_point_f, 1) if dew_point_f else None,
+            uptime_s=uptime_s,
+            boot_count=boot_count,
         )
     except Exception as e:
         logger.error(f"Failed to fetch sensor data: {e}")

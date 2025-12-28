@@ -1,4 +1,4 @@
-"""Indoor sensor provider for ESP32 DHT11 data."""
+"""Indoor sensor provider for ESP32 DHT11/BME280 data."""
 
 from __future__ import annotations
 
@@ -19,8 +19,8 @@ class IndoorSensorProvider(BaseProvider):
     """
     Indoor sensor data provider using SQLite database.
 
-    Reads temperature and humidity data from ESP32 DHT11 sensors
-    stored in the local SQLite database.
+    Reads temperature, humidity, and (optionally) pressure/dew point data
+    from ESP32 sensors (DHT11 or BME280) stored in the local SQLite database.
 
     Options:
     - sensor_id: Optional specific sensor to query (default: latest from any)
@@ -89,12 +89,50 @@ class IndoorSensorProvider(BaseProvider):
             history_data = []
             for reading in reversed(history):
                 r_temp_c = reading["temperature_c"]
-                history_data.append({
+                entry = {
                     "temperature_c": r_temp_c,
                     "temperature_f": round((r_temp_c * 9 / 5) + 32, 1),
                     "humidity": reading["humidity"],
                     "timestamp": reading["timestamp"],
-                })
+                }
+                # Include pressure/dew_point if available (BME280)
+                if reading.get("pressure_hpa") is not None:
+                    entry["pressure_hpa"] = reading["pressure_hpa"]
+                if reading.get("dew_point_c") is not None:
+                    entry["dew_point_c"] = reading["dew_point_c"]
+                    entry["dew_point_f"] = round((reading["dew_point_c"] * 9 / 5) + 32, 1)
+                history_data.append(entry)
+
+            # Build stats dict with optional pressure/dew_point stats
+            stats_data = {
+                "hours": stats_hours,
+                "reading_count": stats["reading_count"],
+                "temperature": {
+                    "min_c": stats["temperature"]["min"],
+                    "max_c": stats["temperature"]["max"],
+                    "avg_c": stats["temperature"]["avg"],
+                    "min_f": round((stats["temperature"]["min"] * 9 / 5) + 32, 1) if stats["temperature"]["min"] else None,
+                    "max_f": round((stats["temperature"]["max"] * 9 / 5) + 32, 1) if stats["temperature"]["max"] else None,
+                    "avg_f": round((stats["temperature"]["avg"] * 9 / 5) + 32, 1) if stats["temperature"]["avg"] else None,
+                },
+                "humidity": stats["humidity"]
+            }
+
+            # Add pressure stats if available
+            if "pressure" in stats:
+                stats_data["pressure"] = stats["pressure"]
+
+            # Add dew point stats if available
+            if "dew_point" in stats:
+                dew = stats["dew_point"]
+                stats_data["dew_point"] = {
+                    "min_c": dew["min"],
+                    "max_c": dew["max"],
+                    "avg_c": dew["avg"],
+                    "min_f": round((dew["min"] * 9 / 5) + 32, 1) if dew["min"] else None,
+                    "max_f": round((dew["max"] * 9 / 5) + 32, 1) if dew["max"] else None,
+                    "avg_f": round((dew["avg"] * 9 / 5) + 32, 1) if dew["avg"] else None,
+                }
 
             data = {
                 "available": True,
@@ -105,25 +143,33 @@ class IndoorSensorProvider(BaseProvider):
                 "timestamp": timestamp.isoformat(),
                 "age_minutes": age_minutes,
                 "is_stale": is_stale,
-                "stats": {
-                    "hours": stats_hours,
-                    "reading_count": stats["reading_count"],
-                    "temperature": {
-                        "min_c": stats["temperature"]["min"],
-                        "max_c": stats["temperature"]["max"],
-                        "avg_c": stats["temperature"]["avg"],
-                        "min_f": round((stats["temperature"]["min"] * 9 / 5) + 32, 1) if stats["temperature"]["min"] else None,
-                        "max_f": round((stats["temperature"]["max"] * 9 / 5) + 32, 1) if stats["temperature"]["max"] else None,
-                        "avg_f": round((stats["temperature"]["avg"] * 9 / 5) + 32, 1) if stats["temperature"]["avg"] else None,
-                    },
-                    "humidity": stats["humidity"]
-                },
+                "stats": stats_data,
                 "history": history_data,
                 "sensors": sensors,
             }
 
+            # Add BME280 fields if available
+            pressure = latest.get("pressure_hpa")
+            dew_c = latest.get("dew_point_c")
+            uptime = latest.get("uptime_s")
+            boots = latest.get("boot_count")
+
+            if pressure is not None:
+                data["pressure_hpa"] = round(pressure, 1)
+            if dew_c is not None:
+                data["dew_point_c"] = round(dew_c, 1)
+                data["dew_point_f"] = round((dew_c * 9 / 5) + 32, 1)
+            if uptime is not None:
+                data["uptime_s"] = uptime
+            if boots is not None:
+                data["boot_count"] = boots
+
+            # Build log message
+            log_parts = [f"{data['temperature_f']}°F", f"{data['humidity']}%"]
+            if pressure is not None:
+                log_parts.append(f"{data['pressure_hpa']}hPa")
             logger.info(
-                f"Fetched indoor sensor: {data['temperature_f']}°F, {data['humidity']}% "
+                f"Fetched indoor sensor: {', '.join(log_parts)} "
                 f"from {data['sensor_id']} ({age_minutes}m ago, {len(history_data)} history points)"
             )
 

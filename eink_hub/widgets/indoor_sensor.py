@@ -1,4 +1,4 @@
-"""Indoor sensor display widget for ESP32 DHT11 data."""
+"""Indoor sensor display widget for ESP32 DHT11/BME280 data."""
 
 from __future__ import annotations
 
@@ -15,13 +15,17 @@ class IndoorSensorWidget(BaseWidget):
     """
     Indoor sensor display widget.
 
-    Shows temperature and humidity from ESP32 DHT11 sensors.
+    Shows temperature, humidity, and optionally pressure/dew point
+    from ESP32 sensors (DHT11 or BME280).
 
     Options:
     - compact: bool (default: False) - Minimal display
     - show_stats: bool (default: False) - Show 24h min/max/avg
     - show_sensor_id: bool (default: False) - Show sensor identifier
     - show_graph: bool (default: False) - Show historical graph
+    - show_pressure: bool (default: True) - Show barometric pressure (BME280 only)
+    - show_dew_point: bool (default: False) - Show dew point temperature
+    - show_device_health: bool (default: False) - Show uptime/boot count
     - title: str (default: "Indoor") - Label for the widget
     - use_fahrenheit: bool (default: True) - Display in Fahrenheit
     """
@@ -75,10 +79,17 @@ class IndoorSensorWidget(BaseWidget):
         hum_font = self._load_font(14)
         draw.text((x, y), f"{humidity}%", font=hum_font, fill=0)
 
+        # Pressure (BME280) on same line if available
+        show_pressure = self.options.get("show_pressure", True)
+        pressure = data.get("pressure_hpa")
+        if show_pressure and pressure is not None:
+            draw.text((x + 50, y), f"{pressure}hPa", font=hum_font, fill=0)
+
         # Stale indicator
         if data.get("is_stale", False):
             warn_font = self._load_font(10)
-            draw.text((x + 50, y), "(stale)", font=warn_font, fill=128)
+            stale_x = x + 120 if pressure else x + 50
+            draw.text((stale_x, y), "(stale)", font=warn_font, fill=128)
 
     def _render_full(
         self,
@@ -98,6 +109,9 @@ class IndoorSensorWidget(BaseWidget):
         age_minutes = data.get("age_minutes", 0)
         is_stale = data.get("is_stale", False)
         show_graph = self.options.get("show_graph", False)
+        show_pressure = self.options.get("show_pressure", True)
+        show_dew_point = self.options.get("show_dew_point", False)
+        show_device_health = self.options.get("show_device_health", False)
 
         # Title
         title_font = self._load_font(14, bold=True)
@@ -123,6 +137,24 @@ class IndoorSensorWidget(BaseWidget):
         draw.text((x, y), f"{humidity}%", font=hum_value_font, fill=0)
         y += 30
 
+        # Pressure (BME280)
+        pressure = data.get("pressure_hpa")
+        if show_pressure and pressure is not None:
+            draw.text((x, y), "Pressure", font=hum_label_font, fill=0)
+            y += 14
+            pressure_font = self._load_font(18, bold=True)
+            draw.text((x, y), f"{pressure} hPa", font=pressure_font, fill=0)
+            y += 24
+
+        # Dew Point (BME280)
+        dew_point = data.get("dew_point_f" if use_f else "dew_point_c")
+        if show_dew_point and dew_point is not None:
+            draw.text((x, y), "Dew Point", font=hum_label_font, fill=0)
+            y += 14
+            dew_font = self._load_font(16, bold=True)
+            draw.text((x, y), f"{dew_point}°{unit}", font=dew_font, fill=0)
+            y += 22
+
         # Last updated
         detail_font = self._load_font(10)
         if age_minutes == 0:
@@ -142,6 +174,32 @@ class IndoorSensorWidget(BaseWidget):
         if self.options.get("show_sensor_id", False):
             draw.text((x, y), sensor_id, font=detail_font, fill=128)
             y += 14
+
+        # Device health (uptime/boot count) if enabled
+        if show_device_health:
+            uptime_s = data.get("uptime_s")
+            boot_count = data.get("boot_count")
+
+            if uptime_s is not None or boot_count is not None:
+                health_parts = []
+                if uptime_s is not None:
+                    # Format uptime nicely
+                    if uptime_s >= 86400:
+                        days = uptime_s // 86400
+                        hours = (uptime_s % 86400) // 3600
+                        health_parts.append(f"Up: {days}d {hours}h")
+                    elif uptime_s >= 3600:
+                        hours = uptime_s // 3600
+                        mins = (uptime_s % 3600) // 60
+                        health_parts.append(f"Up: {hours}h {mins}m")
+                    else:
+                        mins = uptime_s // 60
+                        health_parts.append(f"Up: {mins}m")
+                if boot_count is not None:
+                    health_parts.append(f"Boots: {boot_count}")
+
+                draw.text((x, y), " | ".join(health_parts), font=detail_font, fill=128)
+                y += 14
 
         # Stats if enabled and available
         if self.options.get("show_stats", False) and "stats" in data:
@@ -178,7 +236,23 @@ class IndoorSensorWidget(BaseWidget):
                     font=stats_font,
                     fill=0
                 )
-                y += 16
+                y += 12
+
+            # Pressure range (BME280)
+            pressure_stats = stats.get("pressure", {})
+            if show_pressure and pressure_stats:
+                p_min = pressure_stats.get("min")
+                p_max = pressure_stats.get("max")
+                if p_min is not None and p_max is not None:
+                    draw.text(
+                        (x, y),
+                        f"Press: {p_min}-{p_max} hPa",
+                        font=stats_font,
+                        fill=0
+                    )
+                    y += 12
+
+            y += 4
 
         # Draw historical graphs if enabled
         if show_graph and "history" in data and len(data["history"]) >= 2:
@@ -219,6 +293,21 @@ class IndoorSensorWidget(BaseWidget):
                 label="Humidity %",
                 show_range=True,
             )
+            y += graph_height + 18
+
+            # Pressure graph (BME280) if available
+            pressure_series = [h.get("pressure_hpa") for h in history if h.get("pressure_hpa") is not None]
+            if show_pressure and len(pressure_series) >= 2:
+                self._draw_sparkline(
+                    draw,
+                    pressure_series,
+                    x,
+                    y,
+                    graph_width,
+                    graph_height,
+                    label="Pressure hPa",
+                    show_range=True,
+                )
 
     def _draw_sparkline(
         self,

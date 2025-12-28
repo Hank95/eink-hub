@@ -41,6 +41,23 @@ class SensorDatabase:
                 ON sensor_readings(sensor_id, timestamp DESC)
             """)
 
+            # Migration: Add BME280 columns if they don't exist
+            # SQLite doesn't have IF NOT EXISTS for ALTER TABLE, so we check first
+            cursor.execute("PRAGMA table_info(sensor_readings)")
+            existing_columns = {row["name"] for row in cursor.fetchall()}
+
+            new_columns = [
+                ("pressure_hpa", "REAL"),       # Barometric pressure from BME280
+                ("dew_point_c", "REAL"),        # Calculated dew point
+                ("uptime_s", "INTEGER"),        # ESP32 uptime in seconds
+                ("boot_count", "INTEGER"),      # ESP32 boot counter
+            ]
+
+            for col_name, col_type in new_columns:
+                if col_name not in existing_columns:
+                    cursor.execute(f"ALTER TABLE sensor_readings ADD COLUMN {col_name} {col_type}")
+                    logger.info(f"Added column {col_name} to sensor_readings table")
+
             conn.commit()
             logger.info(f"Sensor database initialized at {self.db_path}")
 
@@ -59,9 +76,13 @@ class SensorDatabase:
         sensor_id: str,
         temperature_c: float,
         humidity: float,
-        timestamp: Optional[datetime] = None
+        timestamp: Optional[datetime] = None,
+        pressure_hpa: Optional[float] = None,
+        dew_point_c: Optional[float] = None,
+        uptime_s: Optional[int] = None,
+        boot_count: Optional[int] = None,
     ) -> int:
-        """Insert a new sensor reading."""
+        """Insert a new sensor reading with optional BME280 fields."""
         if timestamp is None:
             timestamp = datetime.now()
 
@@ -69,14 +90,28 @@ class SensorDatabase:
             cursor = conn.cursor()
             cursor.execute(
                 """
-                INSERT INTO sensor_readings (sensor_id, temperature_c, humidity, timestamp)
-                VALUES (?, ?, ?, ?)
+                INSERT INTO sensor_readings
+                    (sensor_id, temperature_c, humidity, timestamp,
+                     pressure_hpa, dew_point_c, uptime_s, boot_count)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """,
-                (sensor_id, temperature_c, humidity, timestamp)
+                (sensor_id, temperature_c, humidity, timestamp,
+                 pressure_hpa, dew_point_c, uptime_s, boot_count)
             )
             conn.commit()
             reading_id = cursor.lastrowid
-            logger.debug(f"Inserted reading {reading_id} from {sensor_id}: {temperature_c}°C, {humidity}%")
+
+            # Log with pressure if available (BME280 sensor)
+            if pressure_hpa is not None:
+                logger.debug(
+                    f"Inserted reading {reading_id} from {sensor_id}: "
+                    f"{temperature_c}°C, {humidity}%, {pressure_hpa}hPa"
+                )
+            else:
+                logger.debug(
+                    f"Inserted reading {reading_id} from {sensor_id}: "
+                    f"{temperature_c}°C, {humidity}%"
+                )
             return reading_id
 
     def get_latest_reading(self, sensor_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
@@ -164,7 +199,13 @@ class SensorDatabase:
                         AVG(temperature_c) as temp_avg,
                         MIN(humidity) as humidity_min,
                         MAX(humidity) as humidity_max,
-                        AVG(humidity) as humidity_avg
+                        AVG(humidity) as humidity_avg,
+                        MIN(pressure_hpa) as pressure_min,
+                        MAX(pressure_hpa) as pressure_max,
+                        AVG(pressure_hpa) as pressure_avg,
+                        MIN(dew_point_c) as dew_min,
+                        MAX(dew_point_c) as dew_max,
+                        AVG(dew_point_c) as dew_avg
                     FROM sensor_readings
                     WHERE sensor_id = ? AND timestamp >= ?
                     """,
@@ -180,7 +221,13 @@ class SensorDatabase:
                         AVG(temperature_c) as temp_avg,
                         MIN(humidity) as humidity_min,
                         MAX(humidity) as humidity_max,
-                        AVG(humidity) as humidity_avg
+                        AVG(humidity) as humidity_avg,
+                        MIN(pressure_hpa) as pressure_min,
+                        MAX(pressure_hpa) as pressure_max,
+                        AVG(pressure_hpa) as pressure_avg,
+                        MIN(dew_point_c) as dew_min,
+                        MAX(dew_point_c) as dew_max,
+                        AVG(dew_point_c) as dew_avg
                     FROM sensor_readings
                     WHERE timestamp >= ?
                     """,
@@ -189,7 +236,7 @@ class SensorDatabase:
 
             row = cursor.fetchone()
             if row and row["reading_count"] > 0:
-                return {
+                result = {
                     "reading_count": row["reading_count"],
                     "temperature": {
                         "min": round(row["temp_min"], 1),
@@ -202,6 +249,25 @@ class SensorDatabase:
                         "avg": round(row["humidity_avg"], 1)
                     }
                 }
+
+                # Add pressure stats if available (BME280 sensors)
+                if row["pressure_min"] is not None:
+                    result["pressure"] = {
+                        "min": round(row["pressure_min"], 1),
+                        "max": round(row["pressure_max"], 1),
+                        "avg": round(row["pressure_avg"], 1)
+                    }
+
+                # Add dew point stats if available
+                if row["dew_min"] is not None:
+                    result["dew_point"] = {
+                        "min": round(row["dew_min"], 1),
+                        "max": round(row["dew_max"], 1),
+                        "avg": round(row["dew_avg"], 1)
+                    }
+
+                return result
+
             return {
                 "reading_count": 0,
                 "temperature": {"min": None, "max": None, "avg": None},

@@ -90,11 +90,19 @@ class ErrorResponse(BaseModel):
 
 
 class SensorDataRequest(BaseModel):
-    """Request to submit sensor data from ESP32."""
+    """Request to submit sensor data from ESP32 (DHT11 or BME280)."""
 
     temperature_c: float
     humidity: float
-    sensor_id: str = "esp32_dht11_1"
+    sensor_id: str = "esp32_bme280_1"
+
+    # BME280 additional fields (optional for backwards compatibility with DHT11)
+    pressure_hpa: Optional[float] = None
+    dew_point_c: Optional[float] = None
+
+    # Device health metrics
+    uptime_s: Optional[int] = None
+    boot_count: Optional[int] = None
 
 
 class SensorDataResponse(BaseModel):
@@ -105,6 +113,8 @@ class SensorDataResponse(BaseModel):
     sensor_id: str
     temperature_c: float
     humidity: float
+    pressure_hpa: Optional[float] = None
+    dew_point_c: Optional[float] = None
 
 
 class SensorReadingResponse(BaseModel):
@@ -119,6 +129,15 @@ class SensorReadingResponse(BaseModel):
     age_minutes: Optional[int] = None
     is_stale: Optional[bool] = None
     error: Optional[str] = None
+
+    # BME280 fields
+    pressure_hpa: Optional[float] = None
+    dew_point_c: Optional[float] = None
+    dew_point_f: Optional[float] = None
+
+    # Device health
+    uptime_s: Optional[int] = None
+    boot_count: Optional[int] = None
 
 
 # ============================================================================
