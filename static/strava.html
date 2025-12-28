@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Strava History - E-Ink Hub</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+        background: #fafafa;
+      }
+      h1 {
+        margin-bottom: 0.25rem;
+        color: #222;
+      }
+      h2 {
+        color: #333;
+        border-bottom: 1px solid #ddd;
+        padding-bottom: 8px;
+        margin-top: 24px;
+      }
+      .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-bottom: 20px;
+      }
+      .nav-link {
+        color: #fc4c02;
+        text-decoration: none;
+      }
+      .nav-link:hover {
+        text-decoration: underline;
+      }
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
+      }
+      .stat-card {
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 20px;
+        text-align: center;
+      }
+      .stat-card.highlight {
+        border-color: #fc4c02;
+        background: linear-gradient(135deg, #fff5f0 0%, #fff 100%);
+      }
+      .stat-value {
+        font-size: 2.2rem;
+        font-weight: bold;
+        color: #333;
+      }
+      .stat-value.strava-orange {
+        color: #fc4c02;
+      }
+      .stat-label {
+        font-size: 0.9rem;
+        color: #666;
+        margin-top: 4px;
+      }
+      .stat-sub {
+        font-size: 0.8rem;
+        color: #999;
+        margin-top: 8px;
+      }
+      .chart-container {
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 24px;
+      }
+      .chart-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+      .chart-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #333;
+      }
+      .chart-wrapper {
+        position: relative;
+        height: 300px;
+      }
+      .chart-wrapper.tall {
+        height: 350px;
+      }
+      .week-selector {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .week-selector button {
+        padding: 6px 12px;
+        border: 1px solid #ddd;
+        background: white;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.85rem;
+      }
+      .week-selector button:hover {
+        background: #f5f5f5;
+      }
+      .week-selector button.active {
+        background: #fc4c02;
+        color: white;
+        border-color: #fc4c02;
+      }
+      .week-selector span {
+        font-size: 0.9rem;
+        color: #666;
+        padding: 0 8px;
+      }
+      .recent-runs {
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        overflow: hidden;
+      }
+      .recent-runs-header {
+        padding: 16px 20px;
+        border-bottom: 1px solid #ddd;
+        font-weight: 600;
+        color: #333;
+      }
+      .run-item {
+        display: grid;
+        grid-template-columns: 1fr auto auto auto;
+        gap: 16px;
+        padding: 14px 20px;
+        border-bottom: 1px solid #eee;
+        align-items: center;
+      }
+      .run-item:last-child {
+        border-bottom: none;
+      }
+      .run-item:hover {
+        background: #fafafa;
+      }
+      .run-name {
+        font-weight: 500;
+        color: #333;
+      }
+      .run-date {
+        font-size: 0.85rem;
+        color: #666;
+      }
+      .run-distance {
+        font-weight: 600;
+        color: #fc4c02;
+        text-align: right;
+        min-width: 70px;
+      }
+      .run-pace {
+        font-size: 0.9rem;
+        color: #666;
+        text-align: right;
+        min-width: 80px;
+      }
+      .run-time {
+        font-size: 0.9rem;
+        color: #666;
+        text-align: right;
+        min-width: 60px;
+      }
+      .monthly-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 12px;
+      }
+      .month-card {
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        padding: 14px;
+        text-align: center;
+      }
+      .month-name {
+        font-size: 0.85rem;
+        color: #666;
+        margin-bottom: 6px;
+      }
+      .month-miles {
+        font-size: 1.4rem;
+        font-weight: bold;
+        color: #333;
+      }
+      .month-count {
+        font-size: 0.8rem;
+        color: #999;
+        margin-top: 4px;
+      }
+      .no-data {
+        text-align: center;
+        padding: 40px;
+        color: #666;
+      }
+      .db-info {
+        font-size: 0.9rem;
+        color: #666;
+      }
+      .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 32px;
+        margin-bottom: 16px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid #ddd;
+      }
+      .section-header h2 {
+        margin: 0;
+        border: none;
+        padding: 0;
+      }
+      .toggle-btn {
+        padding: 8px 16px;
+        border: 1px solid #ddd;
+        background: white;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.85rem;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .toggle-btn:hover {
+        background: #f5f5f5;
+      }
+      .toggle-btn.active {
+        background: #333;
+        color: white;
+        border-color: #333;
+      }
+      .advanced-section {
+        display: none;
+      }
+      .advanced-section.visible {
+        display: block;
+      }
+      .data-table-container {
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        overflow: hidden;
+      }
+      .table-controls {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 16px;
+        background: #f9f9f9;
+        border-bottom: 1px solid #ddd;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+      .table-controls select {
+        padding: 6px 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 0.85rem;
+      }
+      .table-controls label {
+        font-size: 0.85rem;
+        color: #666;
+      }
+      .record-count {
+        font-size: 0.85rem;
+        color: #666;
+      }
+      .data-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.9rem;
+      }
+      .data-table th {
+        background: #f5f5f5;
+        padding: 12px 16px;
+        text-align: left;
+        font-weight: 600;
+        color: #333;
+        border-bottom: 2px solid #ddd;
+        position: sticky;
+        top: 0;
+      }
+      .data-table td {
+        padding: 10px 16px;
+        border-bottom: 1px solid #eee;
+        color: #444;
+      }
+      .data-table tr:hover {
+        background: #fafafa;
+      }
+      .data-table .date-col {
+        white-space: nowrap;
+      }
+      .data-table .distance-col {
+        font-weight: 500;
+        color: #fc4c02;
+        text-align: right;
+      }
+      .data-table .pace-col {
+        text-align: right;
+      }
+      .data-table .time-col {
+        text-align: right;
+        font-family: monospace;
+      }
+      .table-scroll {
+        max-height: 500px;
+        overflow-y: auto;
+      }
+      .pagination {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 8px;
+        padding: 12px;
+        background: #f9f9f9;
+        border-top: 1px solid #ddd;
+      }
+      .pagination button {
+        padding: 6px 12px;
+        border: 1px solid #ddd;
+        background: white;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.85rem;
+      }
+      .pagination button:hover:not(:disabled) {
+        background: #f5f5f5;
+      }
+      .pagination button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      .pagination .page-info {
+        font-size: 0.85rem;
+        color: #666;
+        padding: 0 12px;
+      }
+      .export-btn {
+        padding: 6px 12px;
+        border: 1px solid #fc4c02;
+        background: white;
+        color: #fc4c02;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.85rem;
+      }
+      .export-btn:hover {
+        background: #fc4c02;
+        color: white;
+      }
+      .loading {
+        text-align: center;
+        padding: 40px;
+        color: #666;
+      }
+      @media (max-width: 600px) {
+        .run-item {
+          grid-template-columns: 1fr auto;
+          gap: 8px;
+        }
+        .run-pace, .run-time {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <div>
+        <h1>Strava Running History</h1>
+        <a href="/" class="nav-link">&larr; Back to Dashboard</a>
+      </div>
+      <div class="db-info" id="db-info">
+        Loading...
+      </div>
+    </div>
+
+    <!-- All-Time Stats -->
+    <div class="stats-grid" id="stats-grid">
+      <div class="stat-card highlight">
+        <div class="stat-value strava-orange" id="total-miles">--</div>
+        <div class="stat-label">Total Miles</div>
+        <div class="stat-sub" id="total-runs">-- runs</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="avg-miles">--</div>
+        <div class="stat-label">Avg per Run</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="longest-run">--</div>
+        <div class="stat-label">Longest Run</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="this-week">--</div>
+        <div class="stat-label">This Week</div>
+        <div class="stat-sub" id="week-goal"></div>
+      </div>
+    </div>
+
+    <!-- Weekly Chart -->
+    <div class="chart-container">
+      <div class="chart-header">
+        <span class="chart-title">Weekly Mileage</span>
+        <div class="week-selector">
+          <button onclick="changeWeek(-1)" id="prev-week-btn">&larr;</button>
+          <span id="week-label">This Week</span>
+          <button onclick="changeWeek(1)" id="next-week-btn" disabled>&rarr;</button>
+        </div>
+      </div>
+      <div class="chart-wrapper">
+        <canvas id="weeklyChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Monthly Chart -->
+    <div class="chart-container">
+      <div class="chart-header">
+        <span class="chart-title">Monthly Totals</span>
+      </div>
+      <div class="chart-wrapper tall">
+        <canvas id="monthlyChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Monthly Cards -->
+    <h2>Month by Month</h2>
+    <div class="monthly-grid" id="monthly-grid">
+      <div class="loading">Loading monthly data...</div>
+    </div>
+
+    <!-- Recent Runs -->
+    <h2>Recent Runs</h2>
+    <div class="recent-runs" id="recent-runs">
+      <div class="recent-runs-header">Last 20 Runs</div>
+      <div class="loading">Loading...</div>
+    </div>
+
+    <!-- All Activities Table -->
+    <div class="section-header">
+      <h2>All Activities</h2>
+      <button class="toggle-btn" id="toggle-advanced" onclick="toggleAdvancedView()">
+        <span id="toggle-icon">+</span> Show All Data
+      </button>
+    </div>
+
+    <div class="advanced-section" id="advanced-section">
+      <div class="data-table-container">
+        <div class="table-controls">
+          <div>
+            <label>
+              Activity Type:
+              <select id="activity-type" onchange="fetchTableData()">
+                <option value="">All Types</option>
+                <option value="Run" selected>Runs</option>
+                <option value="Ride">Rides</option>
+                <option value="Walk">Walks</option>
+                <option value="Hike">Hikes</option>
+              </select>
+            </label>
+            <label style="margin-left: 12px;">
+              Time Range:
+              <select id="table-days" onchange="fetchTableData()">
+                <option value="7">Last 7 days</option>
+                <option value="30" selected>Last 30 days</option>
+                <option value="90">Last 90 days</option>
+                <option value="365">Last year</option>
+                <option value="">All time</option>
+              </select>
+            </label>
+          </div>
+          <div>
+            <span class="record-count" id="record-count">Loading...</span>
+            <button class="export-btn" onclick="exportCSV()">Export CSV</button>
+          </div>
+        </div>
+
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Name</th>
+                <th>Type</th>
+                <th style="text-align: right">Distance</th>
+                <th style="text-align: right">Pace</th>
+                <th style="text-align: right">Time</th>
+              </tr>
+            </thead>
+            <tbody id="table-body">
+              <tr><td colspan="6" style="text-align: center; padding: 20px;">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="pagination">
+          <button onclick="changePage(-1)" id="prev-btn" disabled>Previous</button>
+          <span class="page-info" id="page-info">Page 1</span>
+          <button onclick="changePage(1)" id="next-btn">Next</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      let weeklyChart = null;
+      let monthlyChart = null;
+      let currentWeeksBack = 0;
+      let allTableData = [];
+      let currentPage = 1;
+      const rowsPerPage = 50;
+
+      const chartColors = {
+        orange: '#fc4c02',
+        orangeLight: 'rgba(252, 76, 2, 0.2)',
+        gray: '#666',
+      };
+
+      // ============================================
+      // Initialize Charts
+      // ============================================
+
+      function initCharts() {
+        // Weekly bar chart
+        const weeklyCtx = document.getElementById('weeklyChart').getContext('2d');
+        weeklyChart = new Chart(weeklyCtx, {
+          type: 'bar',
+          data: {
+            labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+            datasets: [{
+              label: 'Miles',
+              data: [0, 0, 0, 0, 0, 0, 0],
+              backgroundColor: chartColors.orange,
+              borderRadius: 4,
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                callbacks: {
+                  label: (ctx) => `${ctx.parsed.y.toFixed(1)} miles`
+                }
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                title: { display: true, text: 'Miles' },
+                grid: { color: '#f0f0f0' }
+              },
+              x: {
+                grid: { display: false }
+              }
+            }
+          }
+        });
+
+        // Monthly bar chart
+        const monthlyCtx = document.getElementById('monthlyChart').getContext('2d');
+        monthlyChart = new Chart(monthlyCtx, {
+          type: 'bar',
+          data: {
+            labels: [],
+            datasets: [{
+              label: 'Miles',
+              data: [],
+              backgroundColor: chartColors.orange,
+              borderRadius: 4,
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                callbacks: {
+                  label: (ctx) => `${ctx.parsed.y.toFixed(1)} miles`
+                }
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                title: { display: true, text: 'Miles' },
+                grid: { color: '#f0f0f0' }
+              },
+              x: {
+                grid: { display: false }
+              }
+            }
+          }
+        });
+      }
+
+      // ============================================
+      // Data Fetching
+      // ============================================
+
+      async function fetchAllTimeStats() {
+        try {
+          const res = await fetch('/api/strava/stats?activity_type=Run');
+          const data = await res.json();
+          const stats = data.stats;
+
+          if (stats.total_activities === 0) {
+            document.getElementById('db-info').textContent = 'No activities stored yet';
+            return;
+          }
+
+          document.getElementById('total-miles').textContent = stats.total_miles.toLocaleString();
+          document.getElementById('total-runs').textContent = `${stats.total_activities} runs`;
+          document.getElementById('avg-miles').textContent = stats.avg_miles.toFixed(1);
+          document.getElementById('longest-run').textContent = stats.longest_miles.toFixed(1);
+
+          // Calculate total time
+          const totalHours = Math.floor(stats.total_time_seconds / 3600);
+          document.getElementById('db-info').textContent =
+            `${stats.total_activities} activities | ${totalHours} total hours`;
+
+        } catch (e) {
+          console.error('Failed to fetch stats:', e);
+        }
+      }
+
+      async function fetchWeeklyData() {
+        try {
+          const res = await fetch(`/api/strava/weekly?activity_type=Run&weeks_back=${currentWeeksBack}`);
+          const data = await res.json();
+
+          // Update chart
+          weeklyChart.data.datasets[0].data = data.weekly_miles;
+          weeklyChart.update();
+
+          // Update week label
+          const weekLabel = currentWeeksBack === 0 ? 'This Week' :
+                           currentWeeksBack === 1 ? 'Last Week' :
+                           `${currentWeeksBack} weeks ago`;
+          document.getElementById('week-label').textContent =
+            `${weekLabel} (${data.week_start})`;
+
+          // Update this week stat
+          if (currentWeeksBack === 0) {
+            document.getElementById('this-week').textContent = data.week_total_miles.toFixed(1);
+          }
+
+          // Enable/disable navigation buttons
+          document.getElementById('next-week-btn').disabled = currentWeeksBack === 0;
+
+        } catch (e) {
+          console.error('Failed to fetch weekly data:', e);
+        }
+      }
+
+      async function fetchMonthlyData() {
+        try {
+          const res = await fetch('/api/strava/monthly?activity_type=Run&months=12');
+          const data = await res.json();
+          const totals = data.monthly_totals;
+
+          if (totals.length === 0) {
+            document.getElementById('monthly-grid').innerHTML =
+              '<div class="no-data">No monthly data available</div>';
+            return;
+          }
+
+          // Update chart (reverse for chronological order)
+          const chartData = [...totals].reverse();
+          monthlyChart.data.labels = chartData.map(m => formatMonth(m.month));
+          monthlyChart.data.datasets[0].data = chartData.map(m => m.total_miles);
+          monthlyChart.update();
+
+          // Update monthly cards
+          const grid = document.getElementById('monthly-grid');
+          grid.innerHTML = totals.map(m => `
+            <div class="month-card">
+              <div class="month-name">${formatMonth(m.month)}</div>
+              <div class="month-miles">${m.total_miles.toFixed(1)}</div>
+              <div class="month-count">${m.activity_count} runs</div>
+            </div>
+          `).join('');
+
+        } catch (e) {
+          console.error('Failed to fetch monthly data:', e);
+        }
+      }
+
+      async function fetchRecentRuns() {
+        try {
+          const res = await fetch('/api/strava/runs?limit=20');
+          const data = await res.json();
+
+          if (data.runs.length === 0) {
+            document.getElementById('recent-runs').innerHTML =
+              '<div class="recent-runs-header">Recent Runs</div>' +
+              '<div class="no-data">No runs recorded yet</div>';
+            return;
+          }
+
+          const runsHtml = data.runs.map(run => {
+            const miles = (run.distance_meters / 1609.34).toFixed(2);
+            const pace = formatPace(run.moving_time_seconds, run.distance_meters);
+            const time = formatDuration(run.moving_time_seconds);
+            const date = formatDate(run.start_date);
+
+            return `
+              <div class="run-item">
+                <div>
+                  <div class="run-name">${run.name || 'Run'}</div>
+                  <div class="run-date">${date}</div>
+                </div>
+                <div class="run-distance">${miles} mi</div>
+                <div class="run-pace">${pace}</div>
+                <div class="run-time">${time}</div>
+              </div>
+            `;
+          }).join('');
+
+          document.getElementById('recent-runs').innerHTML =
+            '<div class="recent-runs-header">Last 20 Runs</div>' + runsHtml;
+
+        } catch (e) {
+          console.error('Failed to fetch recent runs:', e);
+        }
+      }
+
+      async function fetchActivityCount() {
+        try {
+          const res = await fetch('/api/strava/count');
+          const data = await res.json();
+          return data.count;
+        } catch (e) {
+          return 0;
+        }
+      }
+
+      // ============================================
+      // Utility Functions
+      // ============================================
+
+      function formatMonth(monthStr) {
+        const [year, month] = monthStr.split('-');
+        const date = new Date(year, parseInt(month) - 1);
+        return date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+      }
+
+      function formatDate(dateStr) {
+        const date = new Date(dateStr);
+        return date.toLocaleDateString('en-US', {
+          weekday: 'short',
+          month: 'short',
+          day: 'numeric'
+        });
+      }
+
+      function formatPace(seconds, meters) {
+        if (!seconds || !meters) return '--';
+        const miles = meters / 1609.34;
+        const paceSeconds = seconds / miles;
+        const mins = Math.floor(paceSeconds / 60);
+        const secs = Math.round(paceSeconds % 60);
+        return `${mins}:${secs.toString().padStart(2, '0')} /mi`;
+      }
+
+      function formatDuration(seconds) {
+        if (!seconds) return '--';
+        const hrs = Math.floor(seconds / 3600);
+        const mins = Math.floor((seconds % 3600) / 60);
+        const secs = seconds % 60;
+
+        if (hrs > 0) {
+          return `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
+      }
+
+      // ============================================
+      // Week Navigation
+      // ============================================
+
+      function changeWeek(delta) {
+        currentWeeksBack = Math.max(0, currentWeeksBack - delta);
+        fetchWeeklyData();
+      }
+
+      // ============================================
+      // Advanced Table View
+      // ============================================
+
+      let advancedVisible = false;
+
+      function toggleAdvancedView() {
+        advancedVisible = !advancedVisible;
+        const section = document.getElementById('advanced-section');
+        const btn = document.getElementById('toggle-advanced');
+
+        if (advancedVisible) {
+          section.classList.add('visible');
+          btn.classList.add('active');
+          btn.innerHTML = '<span id="toggle-icon">-</span> Hide All Data';
+          fetchTableData();
+        } else {
+          section.classList.remove('visible');
+          btn.classList.remove('active');
+          btn.innerHTML = '<span id="toggle-icon">+</span> Show All Data';
+        }
+      }
+
+      async function fetchTableData() {
+        const activityType = document.getElementById('activity-type').value;
+        const days = document.getElementById('table-days').value;
+
+        let url = '/api/strava/activities?limit=500';
+        if (activityType) url += `&activity_type=${activityType}`;
+        if (days) url += `&days=${days}`;
+
+        try {
+          const res = await fetch(url);
+          const data = await res.json();
+
+          allTableData = data.activities || [];
+          document.getElementById('record-count').textContent =
+            `${allTableData.length} activities`;
+
+          currentPage = 1;
+          renderTable();
+
+        } catch (e) {
+          console.error('Failed to fetch table data:', e);
+          document.getElementById('table-body').innerHTML =
+            '<tr><td colspan="6" style="text-align: center; padding: 20px; color: red;">Error loading data</td></tr>';
+        }
+      }
+
+      function renderTable() {
+        const tbody = document.getElementById('table-body');
+        const startIdx = (currentPage - 1) * rowsPerPage;
+        const endIdx = startIdx + rowsPerPage;
+        const pageData = allTableData.slice(startIdx, endIdx);
+
+        if (pageData.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 20px;">No activities found</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = pageData.map(row => {
+          const miles = (row.distance_meters / 1609.34).toFixed(2);
+          const pace = formatPace(row.moving_time_seconds, row.distance_meters);
+          const time = formatDuration(row.moving_time_seconds);
+          const date = formatDate(row.start_date);
+
+          return `
+            <tr>
+              <td class="date-col">${date}</td>
+              <td>${row.name || '--'}</td>
+              <td>${row.type}</td>
+              <td class="distance-col">${miles} mi</td>
+              <td class="pace-col">${pace}</td>
+              <td class="time-col">${time}</td>
+            </tr>
+          `;
+        }).join('');
+
+        // Update pagination
+        const totalPages = Math.ceil(allTableData.length / rowsPerPage);
+        document.getElementById('page-info').textContent = `Page ${currentPage} of ${totalPages || 1}`;
+        document.getElementById('prev-btn').disabled = currentPage <= 1;
+        document.getElementById('next-btn').disabled = currentPage >= totalPages;
+      }
+
+      function changePage(delta) {
+        const totalPages = Math.ceil(allTableData.length / rowsPerPage);
+        const newPage = currentPage + delta;
+
+        if (newPage >= 1 && newPage <= totalPages) {
+          currentPage = newPage;
+          renderTable();
+        }
+      }
+
+      function exportCSV() {
+        if (allTableData.length === 0) {
+          alert('No data to export');
+          return;
+        }
+
+        const headers = ['date', 'name', 'type', 'distance_miles', 'pace', 'duration_seconds', 'elevation_gain'];
+        const rows = allTableData.map(row => {
+          const miles = (row.distance_meters / 1609.34).toFixed(2);
+          const pace = formatPace(row.moving_time_seconds, row.distance_meters);
+          return [
+            row.start_date,
+            `"${(row.name || '').replace(/"/g, '""')}"`,
+            row.type,
+            miles,
+            pace,
+            row.moving_time_seconds,
+            row.total_elevation_gain || 0
+          ].join(',');
+        });
+
+        const csv = [headers.join(','), ...rows].join('\n');
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `strava_activities_${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+
+      // ============================================
+      // Initialize
+      // ============================================
+
+      initCharts();
+      fetchAllTimeStats();
+      fetchWeeklyData();
+      fetchMonthlyData();
+      fetchRecentRuns();
+
+      // Refresh data every 5 minutes
+      setInterval(() => {
+        fetchAllTimeStats();
+        fetchWeeklyData();
+        fetchRecentRuns();
+      }, 300000);
+    </script>
+  </body>
+</html>

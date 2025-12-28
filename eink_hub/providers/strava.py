@@ -11,6 +11,7 @@ import requests
 
 from ..core.exceptions import ConfigurationError, ProviderError
 from ..core.logging import get_logger
+from ..core.strava_database import get_strava_db
 from .base import BaseProvider, ProviderData
 from .registry import ProviderRegistry
 
@@ -49,6 +50,13 @@ class StravaProvider(BaseProvider):
         try:
             token = self._get_access_token()
             activities = self._fetch_activities(token)
+
+            # Save activities to database for historical tracking
+            db = get_strava_db()
+            result = db.upsert_activities(activities)
+            if result["inserted"] > 0:
+                logger.info(f"Saved {result['inserted']} new activities to database")
+
             summary = self._compute_week_summary(activities)
 
             logger.info(

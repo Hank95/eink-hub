@@ -181,3 +181,9 @@ async def index():
 async def sensors_page():
     """Serve the sensor history page."""
     return Path("static/sensors.html").read_text()
+
+
+@app.get("/strava", response_class=HTMLResponse)
+async def strava_page():
+    """Serve the Strava history page."""
+    return Path("static/strava.html").read_text()

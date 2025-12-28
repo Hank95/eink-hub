@@ -5,6 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>E-Ink Hub</title>
     <style>
+      :root {
+        --accent: #2563eb;
+        --accent-light: #dbeafe;
+        --accent-dark: #1d4ed8;
+        --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+        --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -1px rgba(0,0,0,0.05);
+        --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.08), 0 4px 6px -2px rgba(0,0,0,0.04);
+        --radius: 8px;
+        --radius-lg: 12px;
+        --spacing-xs: 4px;
+        --spacing-sm: 8px;
+        --spacing-md: 16px;
+        --spacing-lg: 24px;
+        --spacing-xl: 32px;
+      }
       * {
         box-sizing: border-box;
       }
@@ -12,181 +27,257 @@
         font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         max-width: 1000px;
         margin: 0 auto;
-        padding: 20px;
-        background: #fafafa;
+        padding: var(--spacing-lg);
+        background: #f8fafc;
+        color: #334155;
       }
       h1 {
         margin-bottom: 0.25rem;
-        color: #222;
+        color: #0f172a;
+        font-weight: 700;
+        font-size: 1.75rem;
+        letter-spacing: -0.025em;
       }
       h2 {
-        color: #333;
-        border-bottom: 1px solid #ddd;
-        padding-bottom: 8px;
-        margin-top: 24px;
+        color: #1e293b;
+        border-bottom: 2px solid #e2e8f0;
+        padding-bottom: var(--spacing-sm);
+        margin-top: var(--spacing-xl);
+        font-weight: 600;
+        font-size: 1.1rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
       }
       .header {
         display: flex;
         justify-content: space-between;
         align-items: center;
         flex-wrap: wrap;
-        gap: 12px;
+        gap: var(--spacing-md);
+        margin-bottom: var(--spacing-lg);
       }
       .mode-toggle {
         display: flex;
-        gap: 8px;
+        gap: var(--spacing-sm);
         align-items: center;
+        background: white;
+        padding: var(--spacing-xs) var(--spacing-sm);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow-sm);
+      }
+      .mode-toggle span {
+        font-size: 0.85rem;
+        color: #64748b;
+        font-weight: 500;
       }
       .mode-toggle button {
-        padding: 8px 16px;
+        padding: var(--spacing-sm) var(--spacing-md);
+        border: none;
+        background: transparent;
+        color: #64748b;
+        font-weight: 500;
+      }
+      .mode-toggle button:hover {
+        background: #f1f5f9;
       }
       .mode-toggle button.active {
-        background: #333;
+        background: var(--accent);
         color: white;
-        border-color: #333;
+        border-radius: 6px;
       }
       .grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-        gap: 16px;
-        margin-top: 16px;
+        gap: var(--spacing-md);
+        margin-top: var(--spacing-md);
       }
       .card {
-        border: 1px solid #ddd;
-        border-radius: 8px;
-        padding: 16px;
+        border: 1px solid #e2e8f0;
+        border-radius: var(--radius-lg);
+        padding: var(--spacing-lg);
         background: white;
+        box-shadow: var(--shadow-md);
+        transition: box-shadow 0.2s, transform 0.2s;
+      }
+      .card:hover {
+        box-shadow: var(--shadow-lg);
+        transform: translateY(-2px);
       }
       .card h3 {
         margin-top: 0;
-        color: #333;
+        margin-bottom: var(--spacing-sm);
+        color: #1e293b;
+        font-weight: 600;
       }
       .card p {
-        color: #666;
+        color: #64748b;
         font-size: 0.9rem;
+        line-height: 1.5;
+        margin-bottom: var(--spacing-md);
       }
       button {
-        padding: 8px 14px;
+        padding: var(--spacing-sm) var(--spacing-md);
         border-radius: 6px;
-        border: 1px solid #444;
-        background: #f5f5f5;
+        border: 1px solid #e2e8f0;
+        background: white;
         cursor: pointer;
-        font-size: 0.9rem;
-        transition: background 0.2s;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: #475569;
+        transition: all 0.15s ease;
       }
       button:hover {
-        background: #e5e5e5;
+        background: #f8fafc;
+        border-color: #cbd5e1;
       }
       button:disabled {
         opacity: 0.5;
         cursor: not-allowed;
       }
+      button:active {
+        transform: scale(0.98);
+      }
       img.preview {
         max-width: 100%;
-        border: 1px solid #ccc;
-        border-radius: 4px;
+        border: 1px solid #e2e8f0;
+        border-radius: var(--radius);
       }
       .status-bar {
         display: flex;
         justify-content: space-between;
         align-items: center;
         font-size: 0.9rem;
-        color: #555;
-        padding: 12px;
-        background: white;
-        border: 1px solid #ddd;
-        border-radius: 8px;
-        margin-bottom: 16px;
+        color: #64748b;
+        padding: var(--spacing-md);
+        background: linear-gradient(135deg, var(--accent-light) 0%, white 100%);
+        border: 1px solid var(--accent);
+        border-left: 4px solid var(--accent);
+        border-radius: var(--radius);
+        margin-bottom: var(--spacing-md);
+        box-shadow: var(--shadow-sm);
       }
       .status-bar .layout-name {
-        font-weight: 600;
-        color: #333;
+        font-weight: 700;
+        color: var(--accent-dark);
+        font-size: 1rem;
       }
       .preview-container {
         background: white;
-        padding: 16px;
-        border: 1px solid #ddd;
-        border-radius: 8px;
+        padding: var(--spacing-lg);
+        border: 1px solid #e2e8f0;
+        border-radius: var(--radius-lg);
         text-align: center;
+        box-shadow: var(--shadow-lg);
+      }
+      .preview-container .empty-state {
+        padding: var(--spacing-xl);
+        color: #94a3b8;
+      }
+      .preview-container .empty-state svg {
+        width: 48px;
+        height: 48px;
+        margin-bottom: var(--spacing-md);
+        opacity: 0.5;
       }
       .providers-section {
-        margin-top: 24px;
+        margin-top: var(--spacing-xl);
       }
       .provider-list {
         display: flex;
         flex-wrap: wrap;
-        gap: 12px;
+        gap: var(--spacing-sm);
       }
       .provider-badge {
         display: inline-flex;
         align-items: center;
-        gap: 8px;
-        padding: 8px 12px;
+        gap: var(--spacing-sm);
+        padding: var(--spacing-sm) var(--spacing-md);
         background: white;
-        border: 1px solid #ddd;
-        border-radius: 6px;
+        border: 1px solid #e2e8f0;
+        border-radius: var(--radius);
         font-size: 0.85rem;
+        font-weight: 500;
+        box-shadow: var(--shadow-sm);
+        transition: all 0.15s ease;
+      }
+      .provider-badge:hover {
+        box-shadow: var(--shadow-md);
       }
       .provider-badge.enabled {
-        border-color: #4caf50;
+        border-color: #22c55e;
+        background: linear-gradient(135deg, #f0fdf4 0%, white 100%);
       }
       .provider-badge.disabled {
-        opacity: 0.5;
+        opacity: 0.6;
+        background: #f8fafc;
       }
       .provider-badge.error {
-        border-color: #f44336;
-        background: #fff5f5;
+        border-color: #ef4444;
+        background: linear-gradient(135deg, #fef2f2 0%, white 100%);
       }
       .provider-status {
         width: 8px;
         height: 8px;
         border-radius: 50%;
-        background: #ccc;
+        background: #cbd5e1;
       }
       .provider-status.ok {
-        background: #4caf50;
+        background: #22c55e;
+        box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.2);
       }
       .provider-status.error {
-        background: #f44336;
+        background: #ef4444;
+        box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
       }
       .provider-refresh {
-        padding: 4px 8px;
+        padding: var(--spacing-xs) var(--spacing-sm);
         font-size: 0.75rem;
-        margin-left: 4px;
+        margin-left: var(--spacing-xs);
+        border-radius: 4px;
       }
       input[type="file"],
       input[type="text"] {
-        padding: 8px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
+        padding: var(--spacing-sm);
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
         font-size: 0.9rem;
+        background: white;
+      }
+      input[type="file"]:focus,
+      input[type="text"]:focus {
+        outline: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px var(--accent-light);
       }
       input[type="text"] {
         width: 100%;
       }
       .last-updated {
         font-size: 0.8rem;
-        color: #888;
+        color: #94a3b8;
       }
       .nav-link {
-        color: #0066cc;
+        color: var(--accent);
         text-decoration: none;
         font-size: 0.9rem;
+        font-weight: 500;
+        transition: color 0.15s;
       }
       .nav-link:hover {
+        color: var(--accent-dark);
         text-decoration: underline;
       }
       /* Image Gallery Styles */
       .gallery-section {
-        margin-top: 24px;
+        margin-top: var(--spacing-xl);
       }
       .gallery-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 16px;
+        margin-bottom: var(--spacing-md);
         flex-wrap: wrap;
-        gap: 12px;
+        gap: var(--spacing-md);
       }
       .gallery-header h2 {
         margin: 0;
@@ -195,31 +286,42 @@
       }
       .gallery-controls {
         display: flex;
-        gap: 8px;
+        gap: var(--spacing-sm);
         align-items: center;
+      }
+      .gallery-controls label {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+        font-size: 0.875rem;
+        color: #64748b;
+        cursor: pointer;
       }
       .gallery-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-        gap: 12px;
-        margin-bottom: 20px;
+        gap: var(--spacing-md);
+        margin-bottom: var(--spacing-lg);
       }
       .gallery-item {
         aspect-ratio: 4/3;
-        border: 2px solid #ddd;
-        border-radius: 6px;
+        border: 2px solid #e2e8f0;
+        border-radius: var(--radius);
         overflow: hidden;
         cursor: pointer;
-        transition: border-color 0.2s, transform 0.2s;
-        background: #f0f0f0;
+        transition: all 0.2s ease;
+        background: #f1f5f9;
+        box-shadow: var(--shadow-sm);
       }
       .gallery-item:hover {
-        border-color: #888;
-        transform: scale(1.02);
+        border-color: var(--accent);
+        transform: scale(1.03);
+        box-shadow: var(--shadow-md);
       }
       .gallery-item.selected {
-        border-color: #333;
+        border-color: var(--accent);
         border-width: 3px;
+        box-shadow: 0 0 0 3px var(--accent-light);
       }
       .gallery-item img {
         width: 100%;
@@ -229,111 +331,283 @@
       .gallery-empty {
         grid-column: 1 / -1;
         text-align: center;
-        padding: 40px;
-        color: #888;
-        font-style: italic;
+        padding: var(--spacing-xl);
+        color: #94a3b8;
+        background: white;
+        border-radius: var(--radius-lg);
+        border: 2px dashed #e2e8f0;
+      }
+      .gallery-empty svg {
+        width: 48px;
+        height: 48px;
+        margin-bottom: var(--spacing-md);
+        opacity: 0.4;
       }
       .image-preview-section {
         background: white;
-        border: 1px solid #ddd;
-        border-radius: 8px;
-        padding: 16px;
-        margin-top: 16px;
+        border: 1px solid #e2e8f0;
+        border-radius: var(--radius-lg);
+        padding: var(--spacing-lg);
+        margin-top: var(--spacing-md);
+        box-shadow: var(--shadow-md);
       }
       .image-preview-section h3 {
         margin-top: 0;
-        margin-bottom: 12px;
+        margin-bottom: var(--spacing-md);
+        color: #1e293b;
       }
       .image-preview-container {
         text-align: center;
-        background: #f5f5f5;
-        border-radius: 4px;
-        padding: 8px;
-        margin-bottom: 16px;
+        background: #f8fafc;
+        border-radius: var(--radius);
+        padding: var(--spacing-md);
+        margin-bottom: var(--spacing-md);
+        border: 1px solid #e2e8f0;
       }
       .image-preview-container img {
         max-width: 100%;
-        border: 1px solid #ccc;
+        border-radius: var(--radius);
       }
       .image-controls {
         display: flex;
         flex-wrap: wrap;
-        gap: 16px;
+        gap: var(--spacing-lg);
         align-items: center;
-        margin-bottom: 16px;
+        margin-bottom: var(--spacing-md);
+        padding: var(--spacing-md);
+        background: #f8fafc;
+        border-radius: var(--radius);
       }
       .control-group {
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: var(--spacing-sm);
       }
       .control-group label {
-        font-weight: 500;
-        font-size: 0.9rem;
-      }
-      .rotation-buttons {
-        display: flex;
-        gap: 4px;
-      }
-      .rotation-buttons button {
-        padding: 6px 12px;
+        font-weight: 600;
         font-size: 0.85rem;
+        color: #475569;
       }
-      .rotation-buttons button.active {
-        background: #333;
-        color: white;
-      }
+      .rotation-buttons,
       .fit-mode-buttons {
         display: flex;
-        gap: 4px;
+        gap: 2px;
+        background: #e2e8f0;
+        padding: 2px;
+        border-radius: 6px;
       }
+      .rotation-buttons button,
       .fit-mode-buttons button {
         padding: 6px 12px;
-        font-size: 0.85rem;
+        font-size: 0.8rem;
+        border: none;
+        background: transparent;
+        color: #64748b;
+        border-radius: 4px;
       }
+      .rotation-buttons button:hover,
+      .fit-mode-buttons button:hover {
+        background: white;
+      }
+      .rotation-buttons button.active,
       .fit-mode-buttons button.active {
-        background: #333;
-        color: white;
+        background: white;
+        color: var(--accent);
+        font-weight: 600;
+        box-shadow: var(--shadow-sm);
       }
       .image-actions {
         display: flex;
-        gap: 12px;
+        gap: var(--spacing-md);
         flex-wrap: wrap;
       }
       .image-actions button {
-        padding: 10px 20px;
+        padding: 12px 24px;
       }
       .btn-primary {
-        background: #333;
+        background: var(--accent);
         color: white;
-        border-color: #333;
+        border-color: var(--accent);
+        font-weight: 600;
       }
       .btn-primary:hover {
-        background: #444;
+        background: var(--accent-dark);
+        border-color: var(--accent-dark);
       }
       .btn-danger {
-        background: #fff;
-        color: #d32f2f;
-        border-color: #d32f2f;
+        background: white;
+        color: #dc2626;
+        border-color: #fecaca;
       }
       .btn-danger:hover {
-        background: #ffebee;
+        background: #fef2f2;
+        border-color: #dc2626;
       }
       .upload-section {
-        margin-top: 16px;
-        padding-top: 16px;
-        border-top: 1px solid #eee;
+        margin-top: var(--spacing-md);
+        padding-top: var(--spacing-md);
+        border-top: 1px solid #e2e8f0;
       }
       .upload-form {
         display: flex;
-        gap: 12px;
+        gap: var(--spacing-md);
         align-items: center;
         flex-wrap: wrap;
       }
       .image-info {
         font-size: 0.85rem;
-        color: #666;
-        margin-top: 8px;
+        color: #64748b;
+        margin-top: var(--spacing-sm);
+      }
+      /* Loading spinner */
+      .spinner {
+        display: inline-block;
+        width: 16px;
+        height: 16px;
+        border: 2px solid #e2e8f0;
+        border-top-color: var(--accent);
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+      }
+      .spinner-lg {
+        width: 32px;
+        height: 32px;
+        border-width: 3px;
+      }
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+      .loading-overlay {
+        position: absolute;
+        inset: 0;
+        background: rgba(255,255,255,0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: var(--radius);
+      }
+      /* Preview container improvements */
+      .preview-container {
+        position: relative;
+        min-height: 200px;
+      }
+      .preview-container img.preview {
+        transition: opacity 0.3s ease;
+      }
+      .preview-container.loading img.preview {
+        opacity: 0.4;
+      }
+      .preview-loading {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255,255,255,0.9);
+        border-radius: var(--radius);
+        gap: var(--spacing-md);
+        z-index: 10;
+      }
+      .preview-loading .status-text {
+        font-weight: 500;
+        color: #475569;
+      }
+      .preview-loading .status-subtext {
+        font-size: 0.85rem;
+        color: #94a3b8;
+      }
+      /* Progress steps */
+      .progress-steps {
+        display: flex;
+        gap: var(--spacing-sm);
+        align-items: center;
+        margin-top: var(--spacing-sm);
+      }
+      .progress-step {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #e2e8f0;
+        transition: all 0.3s ease;
+      }
+      .progress-step.active {
+        background: var(--accent);
+        transform: scale(1.2);
+      }
+      .progress-step.done {
+        background: #22c55e;
+      }
+      /* Button loading state */
+      button.loading {
+        position: relative;
+        color: transparent !important;
+        pointer-events: none;
+      }
+      button.loading::after {
+        content: '';
+        position: absolute;
+        width: 16px;
+        height: 16px;
+        top: 50%;
+        left: 50%;
+        margin: -8px 0 0 -8px;
+        border: 2px solid rgba(255,255,255,0.3);
+        border-top-color: white;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+      }
+      button.loading:not(.btn-primary)::after {
+        border-color: #e2e8f0;
+        border-top-color: var(--accent);
+      }
+      /* Toast notifications */
+      .toast-container {
+        position: fixed;
+        bottom: var(--spacing-lg);
+        right: var(--spacing-lg);
+        z-index: 1000;
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-sm);
+      }
+      .toast {
+        padding: var(--spacing-md) var(--spacing-lg);
+        background: #1e293b;
+        color: white;
+        border-radius: var(--radius);
+        box-shadow: var(--shadow-lg);
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+        animation: slideIn 0.3s ease;
+        max-width: 320px;
+      }
+      .toast.success {
+        background: #059669;
+      }
+      .toast.error {
+        background: #dc2626;
+      }
+      @keyframes slideIn {
+        from {
+          transform: translateX(100%);
+          opacity: 0;
+        }
+        to {
+          transform: translateX(0);
+          opacity: 1;
+        }
+      }
+      @keyframes slideOut {
+        from {
+          transform: translateX(0);
+          opacity: 1;
+        }
+        to {
+          transform: translateX(100%);
+          opacity: 0;
+        }
       }
     </style>
   </head>
@@ -341,7 +615,9 @@
     <div class="header">
       <div>
         <h1>E-Ink Display Hub</h1>
-        <a href="/sensors" class="nav-link">View Sensor History &rarr;</a>
+        <a href="/sensors" class="nav-link">Sensor History</a>
+        <span style="color: #94a3b8; margin: 0 8px;">|</span>
+        <a href="/strava" class="nav-link" style="color: #fc4c02;">Strava History</a>
       </div>
       <div class="mode-toggle">
         <span>Mode:</span>
@@ -359,7 +635,13 @@
     </div>
 
     <div class="preview-container" id="preview-container">
-      <em>No preview yet</em>
+      <div class="empty-state">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+        </svg>
+        <div>No preview yet</div>
+        <div style="font-size: 0.85rem; margin-top: 4px;">Select a layout below to display</div>
+      </div>
     </div>
 
     <h2>Layouts</h2>
@@ -435,11 +717,151 @@
       </div>
     </div>
 
+    <!-- Toast notifications container -->
+    <div class="toast-container" id="toast-container"></div>
+
     <script>
       let currentMode = 'manual';
       let availableLayouts = [];
+      let isDisplayUpdating = false;
 
-      async function refreshStatus() {
+      // ========================================
+      // Toast Notification System
+      // ========================================
+      function showToast(message, type = 'info', duration = 3000) {
+        const container = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.innerHTML = `
+          ${type === 'success' ? '<svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>' : ''}
+          ${type === 'error' ? '<svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>' : ''}
+          <span>${message}</span>
+        `;
+        container.appendChild(toast);
+
+        setTimeout(() => {
+          toast.style.animation = 'slideOut 0.3s ease forwards';
+          setTimeout(() => toast.remove(), 300);
+        }, duration);
+      }
+
+      // ========================================
+      // Preview Loading State Management
+      // ========================================
+      function showPreviewLoading(message = 'Updating display...', subtext = '') {
+        const container = document.getElementById('preview-container');
+        container.classList.add('loading');
+
+        // Add loading overlay if not exists
+        let overlay = container.querySelector('.preview-loading');
+        if (!overlay) {
+          overlay = document.createElement('div');
+          overlay.className = 'preview-loading';
+          container.appendChild(overlay);
+        }
+
+        overlay.innerHTML = `
+          <div class="spinner spinner-lg"></div>
+          <div class="status-text">${message}</div>
+          ${subtext ? `<div class="status-subtext">${subtext}</div>` : ''}
+          <div class="progress-steps">
+            <div class="progress-step active" id="step-1"></div>
+            <div class="progress-step" id="step-2"></div>
+            <div class="progress-step" id="step-3"></div>
+          </div>
+        `;
+      }
+
+      function updatePreviewLoadingStep(step, message = '', subtext = '') {
+        const overlay = document.querySelector('.preview-loading');
+        if (!overlay) return;
+
+        // Update steps
+        for (let i = 1; i <= 3; i++) {
+          const stepEl = document.getElementById(`step-${i}`);
+          if (stepEl) {
+            stepEl.classList.toggle('done', i < step);
+            stepEl.classList.toggle('active', i === step);
+          }
+        }
+
+        // Update message
+        if (message) {
+          const textEl = overlay.querySelector('.status-text');
+          if (textEl) textEl.textContent = message;
+        }
+        if (subtext !== undefined) {
+          let subtextEl = overlay.querySelector('.status-subtext');
+          if (subtext) {
+            if (!subtextEl) {
+              subtextEl = document.createElement('div');
+              subtextEl.className = 'status-subtext';
+              overlay.querySelector('.status-text').after(subtextEl);
+            }
+            subtextEl.textContent = subtext;
+          } else if (subtextEl) {
+            subtextEl.remove();
+          }
+        }
+      }
+
+      function hidePreviewLoading() {
+        const container = document.getElementById('preview-container');
+        container.classList.remove('loading');
+        const overlay = container.querySelector('.preview-loading');
+        if (overlay) overlay.remove();
+      }
+
+      // ========================================
+      // Smooth Preview Image Update
+      // ========================================
+      async function updatePreviewImage() {
+        const container = document.getElementById('preview-container');
+        const existingImg = container.querySelector('img.preview');
+
+        // Create new image and preload it
+        const newImg = new Image();
+        newImg.className = 'preview';
+        newImg.alt = 'Preview';
+        newImg.style.opacity = '0';
+        newImg.style.transition = 'opacity 0.3s ease';
+
+        return new Promise((resolve) => {
+          newImg.onload = () => {
+            // Fade out old image, fade in new
+            if (existingImg) {
+              existingImg.style.opacity = '0';
+              setTimeout(() => {
+                existingImg.remove();
+                container.appendChild(newImg);
+                requestAnimationFrame(() => {
+                  newImg.style.opacity = '1';
+                });
+                resolve(true);
+              }, 150);
+            } else {
+              // Remove empty state if present
+              const emptyState = container.querySelector('.empty-state');
+              if (emptyState) emptyState.remove();
+              container.appendChild(newImg);
+              requestAnimationFrame(() => {
+                newImg.style.opacity = '1';
+              });
+              resolve(true);
+            }
+          };
+
+          newImg.onerror = () => {
+            resolve(false);
+          };
+
+          newImg.src = `/api/preview?t=${Date.now()}`;
+        });
+      }
+
+      async function refreshStatus(options = {}) {
+        const { skipPreview = false } = options;
+
         try {
           const res = await fetch("/api/status");
           const data = await res.json();
@@ -469,12 +891,10 @@
           // Update providers
           renderProviders(data.providers || []);
 
-          // Update preview image
-          const previewContainer = document.getElementById('preview-container');
-          previewContainer.innerHTML = `
-            <img class="preview" src="/api/preview?t=${Date.now()}" alt="Preview"
-                 onerror="this.parentElement.innerHTML='<em>No preview yet</em>'" />
-          `;
+          // Update preview image (unless skipped or currently updating)
+          if (!skipPreview && !isDisplayUpdating) {
+            await updatePreviewImage();
+          }
         } catch (e) {
           console.error('Failed to refresh status:', e);
         }
@@ -496,7 +916,7 @@
           <div class="card">
             <h3>${formatLayoutName(layout)}</h3>
             <p>${descriptions[layout] || 'Custom layout'}</p>
-            <button onclick="setLayout('${layout}')">Send to Display</button>
+            <button class="btn-primary" onclick="setLayout('${layout}')">Send to Display</button>
           </div>
         `).join('');
       }
@@ -524,38 +944,103 @@
       }
 
       async function setMode(mode) {
+        const btn = document.getElementById(`btn-${mode === 'manual' ? 'manual' : 'auto'}`);
+        btn?.classList.add('loading');
+
         try {
           await fetch('/api/mode', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ mode })
           });
-          await refreshStatus();
+          await refreshStatus({ skipPreview: true });
+          showToast(`Switched to ${mode === 'manual' ? 'Manual' : 'Auto-Rotate'} mode`, 'success');
         } catch (e) {
           console.error('Failed to set mode:', e);
+          showToast('Failed to change mode', 'error');
+        } finally {
+          btn?.classList.remove('loading');
         }
       }
 
-      async function setLayout(layout) {
+      async function setLayout(layout, buttonEl = null) {
+        if (isDisplayUpdating) {
+          showToast('Display is already updating...', 'info');
+          return;
+        }
+
+        isDisplayUpdating = true;
+        const layoutName = formatLayoutName(layout);
+
+        // Find and disable the button
+        if (!buttonEl) {
+          buttonEl = document.querySelector(`button[onclick="setLayout('${layout}')"]`);
+        }
+        buttonEl?.classList.add('loading');
+
+        // Show loading state on preview
+        showPreviewLoading('Preparing layout...', layoutName);
+
         try {
-          await fetch('/api/display', {
+          // Step 1: Sending request
+          updatePreviewLoadingStep(1, 'Sending to display...', 'Fetching data from providers');
+
+          const res = await fetch('/api/display', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ layout, options: {} })
           });
-          await refreshStatus();
+
+          if (!res.ok) {
+            throw new Error('Failed to send layout');
+          }
+
+          // Step 2: Rendering on display
+          updatePreviewLoadingStep(2, 'Rendering on display...', 'E-ink refresh in progress');
+
+          // Wait for e-ink display to finish (typically 2-3 seconds)
+          await new Promise(resolve => setTimeout(resolve, 2500));
+
+          // Step 3: Loading preview
+          updatePreviewLoadingStep(3, 'Loading preview...', '');
+
+          // Update status without triggering another preview load
+          await refreshStatus({ skipPreview: true });
+
+          // Now smoothly load the new preview
+          hidePreviewLoading();
+          const previewLoaded = await updatePreviewImage();
+
+          if (previewLoaded) {
+            showToast(`${layoutName} sent to display`, 'success');
+          } else {
+            showToast(`${layoutName} sent (preview unavailable)`, 'success');
+          }
         } catch (e) {
           console.error('Failed to set layout:', e);
+          hidePreviewLoading();
+          showToast('Failed to update display', 'error');
+        } finally {
+          isDisplayUpdating = false;
+          buttonEl?.classList.remove('loading');
         }
       }
 
       async function refreshProvider(name) {
+        const badge = document.querySelector(`.provider-badge:has(button[onclick="refreshProvider('${name}')"])`);
+        const btn = badge?.querySelector('.provider-refresh');
+        btn?.classList.add('loading');
+
         try {
           await fetch(`/api/refresh/${name}`, { method: 'POST' });
+          showToast(`${formatLayoutName(name)} data refreshed`, 'success');
           // Wait a moment for data to be fetched
-          setTimeout(refreshStatus, 1000);
+          setTimeout(() => refreshStatus({ skipPreview: true }), 1000);
         } catch (e) {
           console.error('Failed to refresh provider:', e);
+          showToast(`Failed to refresh ${formatLayoutName(name)}`, 'error');
+        } finally {
+          btn?.classList.remove('loading');
         }
       }
 
@@ -583,7 +1068,13 @@
         const grid = document.getElementById('gallery-grid');
 
         if (galleryImages.length === 0) {
-          grid.innerHTML = '<div class="gallery-empty">No images uploaded yet. Upload an image to get started.</div>';
+          grid.innerHTML = `<div class="gallery-empty">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            <div style="font-weight: 500; color: #475569;">No images uploaded yet</div>
+            <div style="font-size: 0.85rem; margin-top: 4px;">Upload an image below to get started</div>
+          </div>`;
           return;
         }
 
@@ -681,7 +1172,22 @@
       async function sendImageToDisplay() {
         if (!selectedImage) return;
 
+        if (isDisplayUpdating) {
+          showToast('Display is already updating...', 'info');
+          return;
+        }
+
+        isDisplayUpdating = true;
+        const btn = document.querySelector('.image-actions .btn-primary');
+        btn?.classList.add('loading');
+
+        // Show loading state on main preview
+        showPreviewLoading('Processing image...', selectedImage.filename);
+
         try {
+          // Step 1: Processing
+          updatePreviewLoadingStep(1, 'Processing image...', 'Converting to monochrome');
+
           const res = await fetch('/api/images/display', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -692,16 +1198,33 @@
             })
           });
 
-          if (res.ok) {
-            await refreshStatus();
-            alert('Image sent to display!');
-          } else {
+          if (!res.ok) {
             const err = await res.json();
-            alert('Failed to send image: ' + (err.detail || 'Unknown error'));
+            throw new Error(err.detail || 'Unknown error');
           }
+
+          // Step 2: Sending to display
+          updatePreviewLoadingStep(2, 'Rendering on display...', 'E-ink refresh in progress');
+
+          // Wait for e-ink display to finish
+          await new Promise(resolve => setTimeout(resolve, 2500));
+
+          // Step 3: Loading preview
+          updatePreviewLoadingStep(3, 'Loading preview...', '');
+
+          await refreshStatus({ skipPreview: true });
+
+          hidePreviewLoading();
+          await updatePreviewImage();
+
+          showToast('Image sent to display', 'success');
         } catch (e) {
           console.error('Failed to send image to display:', e);
-          alert('Failed to send image to display');
+          hidePreviewLoading();
+          showToast(`Failed: ${e.message}`, 'error');
+        } finally {
+          isDisplayUpdating = false;
+          btn?.classList.remove('loading');
         }
       }
 
@@ -710,21 +1233,28 @@
 
         if (!confirm(`Delete "${selectedImage.filename}"?`)) return;
 
+        const btn = document.querySelector('.image-actions .btn-danger');
+        btn?.classList.add('loading');
+
         try {
           const res = await fetch(`/api/images/${encodeURIComponent(selectedImage.filename)}`, {
             method: 'DELETE'
           });
 
           if (res.ok) {
+            const deletedName = selectedImage.filename;
             selectedImage = null;
             document.getElementById('image-preview-section').style.display = 'none';
             await loadGallery();
+            showToast(`Deleted ${deletedName}`, 'success');
           } else {
-            alert('Failed to delete image');
+            showToast('Failed to delete image', 'error');
           }
         } catch (e) {
           console.error('Failed to delete image:', e);
-          alert('Failed to delete image');
+          showToast('Failed to delete image', 'error');
+        } finally {
+          btn?.classList.remove('loading');
         }
       }
 
@@ -732,6 +1262,9 @@
         e.preventDefault();
         const form = e.target;
         const formData = new FormData(form);
+        const submitBtn = form.querySelector('button[type="submit"]');
+
+        submitBtn?.classList.add('loading');
 
         try {
           const res = await fetch('/api/upload', {
@@ -746,21 +1279,23 @@
             // Auto-select the newly uploaded image
             const filename = data.image_path.split('/').pop();
             selectImage(filename);
+            showToast('Image uploaded successfully', 'success');
           } else {
-            alert('Failed to upload image');
+            showToast('Failed to upload image', 'error');
           }
         } catch (e) {
           console.error('Failed to upload image:', e);
-          alert('Failed to upload image');
+          showToast('Failed to upload image', 'error');
+        } finally {
+          submitBtn?.classList.remove('loading');
         }
       }
 
       function togglePhotoAutoRotate() {
         const checkbox = document.getElementById('photo-auto-rotate');
         // TODO: Implement auto-rotate mode for photos
-        // This would require backend support to cycle through uploaded images
         if (checkbox.checked) {
-          alert('Photo auto-rotate will cycle through your uploaded images on the display. (Feature coming soon!)');
+          showToast('Photo auto-rotate coming soon!', 'info');
           checkbox.checked = false;
         }
       }
@@ -769,8 +1304,12 @@
       refreshStatus();
       loadGallery();
 
-      // Refresh every 15 seconds
-      setInterval(refreshStatus, 15000);
+      // Refresh every 15 seconds (but don't disrupt active operations)
+      setInterval(() => {
+        if (!isDisplayUpdating) {
+          refreshStatus();
+        }
+      }, 15000);
     </script>
   </body>
 </html>

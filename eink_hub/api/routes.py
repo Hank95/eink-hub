@@ -12,6 +12,7 @@ from ..core.config import get_config, reload_config
 from ..core.database import get_sensor_db
 from ..core.logging import get_logger
 from ..core.state import StateManager
+from ..core.strava_database import get_strava_db
 from .models import (
     DisplayRequest,
     DisplayResponse,
@@ -540,3 +541,117 @@ async def display_image(req: ImageDisplayRequest, background_tasks: BackgroundTa
     except Exception as e:
         logger.error(f"Failed to display image: {e}")
         raise HTTPException(500, f"Failed to display image: {e}")
+
+
+# ============================================================================
+# Strava History Endpoints
+# ============================================================================
+
+
+@router.get("/strava/activities")
+async def get_strava_activities(
+    activity_type: str = None,
+    days: int = None,
+    limit: int = 100
+):
+    """Get stored Strava activities with optional filters."""
+    try:
+        db = get_strava_db()
+        activities = db.get_activities(
+            activity_type=activity_type,
+            days=days,
+            limit=limit
+        )
+        return {
+            "activities": activities,
+            "count": len(activities),
+            "filters": {
+                "activity_type": activity_type,
+                "days": days,
+                "limit": limit
+            }
+        }
+    except Exception as e:
+        logger.error(f"Failed to fetch Strava activities: {e}")
+        raise HTTPException(500, f"Failed to fetch Strava activities: {e}")
+
+
+@router.get("/strava/runs")
+async def get_strava_runs(days: int = None, limit: int = 100):
+    """Get stored running activities."""
+    try:
+        db = get_strava_db()
+        runs = db.get_runs(days=days, limit=limit)
+        return {
+            "runs": runs,
+            "count": len(runs)
+        }
+    except Exception as e:
+        logger.error(f"Failed to fetch Strava runs: {e}")
+        raise HTTPException(500, f"Failed to fetch Strava runs: {e}")
+
+
+@router.get("/strava/weekly")
+async def get_strava_weekly(activity_type: str = "Run", weeks_back: int = 0):
+    """
+    Get weekly summary for activities.
+
+    Args:
+        activity_type: Type of activity (default: Run)
+        weeks_back: 0 = current week, 1 = last week, etc.
+    """
+    try:
+        db = get_strava_db()
+        summary = db.get_weekly_summary(
+            activity_type=activity_type,
+            weeks_back=weeks_back
+        )
+        return summary
+    except Exception as e:
+        logger.error(f"Failed to fetch Strava weekly summary: {e}")
+        raise HTTPException(500, f"Failed to fetch Strava weekly summary: {e}")
+
+
+@router.get("/strava/monthly")
+async def get_strava_monthly(activity_type: str = "Run", months: int = 12):
+    """Get monthly mileage totals."""
+    try:
+        db = get_strava_db()
+        totals = db.get_monthly_totals(
+            activity_type=activity_type,
+            months=months
+        )
+        return {
+            "monthly_totals": totals,
+            "activity_type": activity_type
+        }
+    except Exception as e:
+        logger.error(f"Failed to fetch Strava monthly totals: {e}")
+        raise HTTPException(500, f"Failed to fetch Strava monthly totals: {e}")
+
+
+@router.get("/strava/stats")
+async def get_strava_stats(activity_type: str = "Run"):
+    """Get all-time statistics."""
+    try:
+        db = get_strava_db()
+        stats = db.get_all_time_stats(activity_type=activity_type)
+        return {
+            "stats": stats,
+            "activity_type": activity_type
+        }
+    except Exception as e:
+        logger.error(f"Failed to fetch Strava stats: {e}")
+        raise HTTPException(500, f"Failed to fetch Strava stats: {e}")
+
+
+@router.get("/strava/count")
+async def get_strava_count():
+    """Get total count of stored activities."""
+    try:
+        db = get_strava_db()
+        count = db.get_activity_count()
+        return {"count": count}
+    except Exception as e:
+        logger.error(f"Failed to fetch Strava count: {e}")
+        raise HTTPException(500, f"Failed to fetch Strava count: {e}")
