@@ -333,6 +333,89 @@
         color: #666;
         margin-top: 4px;
       }
+
+      /* Weather Forecast Styles */
+      .forecast-content {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+      .forecast-main {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+      }
+      .forecast-icon {
+        font-size: 4rem;
+        line-height: 1;
+      }
+      .forecast-details {
+        flex: 1;
+      }
+      .forecast-summary {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 8px;
+      }
+      .forecast-description {
+        font-size: 0.95rem;
+        color: #666;
+        line-height: 1.5;
+      }
+      .forecast-metrics {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+        padding-top: 16px;
+        border-top: 1px solid #eee;
+      }
+      .forecast-metric {
+        text-align: center;
+      }
+      .metric-label {
+        display: block;
+        font-size: 0.8rem;
+        color: #888;
+        margin-bottom: 4px;
+      }
+      .metric-value {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #333;
+      }
+      .forecast-confidence {
+        font-size: 0.8rem;
+        padding: 4px 10px;
+        border-radius: 12px;
+        background: #e8f5e9;
+        color: #2e7d32;
+      }
+      .forecast-confidence.low {
+        background: #fff3e0;
+        color: #e65100;
+      }
+      .pressure-rising { color: #2e7d32; }
+      .pressure-falling { color: #c62828; }
+      .pressure-steady { color: #666; }
+
+      /* Pressure card colors */
+      .reading-card.pressure-high {
+        border-color: #81c784;
+        background: linear-gradient(135deg, #fff 0%, #e8f5e9 100%);
+      }
+      .reading-card.pressure-low {
+        border-color: #e57373;
+        background: linear-gradient(135deg, #fff 0%, #ffebee 100%);
+      }
+
+      /* Data table pressure/dewpoint columns */
+      .data-table .pressure-col {
+        color: #9c27b0;
+      }
+      .data-table .dewpoint-col {
+        color: #00897b;
+      }
     </style>
   </head>
   <body>
@@ -383,6 +466,60 @@
           </div>
         </div>
       </div>
+      <div class="reading-card" id="pressure-card" style="display: none;">
+        <div class="reading-value" id="current-pressure">--</div>
+        <div class="reading-label">Pressure</div>
+        <div class="stats-row">
+          <div class="stat">
+            <span class="stat-value" id="pressure-min">--</span>
+            <span>Min</span>
+          </div>
+          <div class="stat">
+            <span class="stat-value" id="pressure-max">--</span>
+            <span>Max</span>
+          </div>
+          <div class="stat">
+            <span class="stat-value" id="pressure-trend">--</span>
+            <span>Trend</span>
+          </div>
+        </div>
+      </div>
+      <div class="reading-card" id="dewpoint-card" style="display: none;">
+        <div class="reading-value" id="current-dewpoint">--</div>
+        <div class="reading-label">Dew Point</div>
+        <div class="reading-meta" id="dewpoint-comfort">--</div>
+      </div>
+    </div>
+
+    <!-- Weather Forecast Card -->
+    <div class="chart-container" id="forecast-section" style="display: none;">
+      <div class="chart-header">
+        <span class="chart-title">Weather Forecast</span>
+        <span class="forecast-confidence" id="forecast-confidence"></span>
+      </div>
+      <div class="forecast-content">
+        <div class="forecast-main">
+          <span class="forecast-icon" id="forecast-icon">--</span>
+          <div class="forecast-details">
+            <div class="forecast-summary" id="forecast-summary">Analyzing pressure trends...</div>
+            <div class="forecast-description" id="forecast-description"></div>
+          </div>
+        </div>
+        <div class="forecast-metrics">
+          <div class="forecast-metric">
+            <span class="metric-label">3hr Change</span>
+            <span class="metric-value" id="pressure-change-3h">--</span>
+          </div>
+          <div class="forecast-metric">
+            <span class="metric-label">Pressure State</span>
+            <span class="metric-value" id="pressure-state">--</span>
+          </div>
+          <div class="forecast-metric">
+            <span class="metric-label">Trend</span>
+            <span class="metric-value" id="pressure-direction">--</span>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="chart-container">
@@ -407,6 +544,26 @@
       </div>
       <div class="chart-wrapper">
         <canvas id="humidityChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Pressure Chart (BME280 only) -->
+    <div class="chart-container" id="pressure-chart-container" style="display: none;">
+      <div class="chart-header">
+        <span class="chart-title">Barometric Pressure History</span>
+      </div>
+      <div class="chart-wrapper">
+        <canvas id="pressureChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Dew Point Chart (BME280 only) -->
+    <div class="chart-container" id="dewpoint-chart-container" style="display: none;">
+      <div class="chart-header">
+        <span class="chart-title">Dew Point History</span>
+      </div>
+      <div class="chart-wrapper">
+        <canvas id="dewpointChart"></canvas>
       </div>
     </div>
 
@@ -477,13 +634,14 @@
                 <th>ID</th>
                 <th>Timestamp</th>
                 <th>Sensor ID</th>
-                <th style="text-align: right">Temp (C)</th>
                 <th style="text-align: right">Temp (F)</th>
                 <th style="text-align: right">Humidity (%)</th>
+                <th style="text-align: right">Pressure (hPa)</th>
+                <th style="text-align: right">Dew Pt (F)</th>
               </tr>
             </thead>
             <tbody id="table-body">
-              <tr><td colspan="6" style="text-align: center; padding: 20px;">Loading...</td></tr>
+              <tr><td colspan="7" style="text-align: center; padding: 20px;">Loading...</td></tr>
             </tbody>
           </table>
         </div>
@@ -500,6 +658,9 @@
       let currentHours = 24;
       let tempChart = null;
       let humidityChart = null;
+      let pressureChart = null;
+      let dewpointChart = null;
+      let hasBME280 = false;  // Track if we have BME280 data
 
       const chartOptions = {
         responsive: true,
@@ -612,6 +773,68 @@
             }
           }
         });
+
+        // Pressure chart (BME280)
+        const pressCtx = document.getElementById('pressureChart').getContext('2d');
+        pressureChart = new Chart(pressCtx, {
+          type: 'line',
+          data: {
+            datasets: [{
+              label: 'Pressure (hPa)',
+              data: [],
+              borderColor: '#9c27b0',
+              backgroundColor: 'rgba(156, 39, 176, 0.1)',
+              fill: true,
+              tension: 0.3,
+              pointRadius: 0,
+              pointHoverRadius: 5,
+            }]
+          },
+          options: {
+            ...chartOptions,
+            scales: {
+              ...chartOptions.scales,
+              y: {
+                ...chartOptions.scales.y,
+                title: {
+                  display: true,
+                  text: 'hPa'
+                }
+              }
+            }
+          }
+        });
+
+        // Dew Point chart (BME280)
+        const dewCtx = document.getElementById('dewpointChart').getContext('2d');
+        dewpointChart = new Chart(dewCtx, {
+          type: 'line',
+          data: {
+            datasets: [{
+              label: 'Dew Point (°F)',
+              data: [],
+              borderColor: '#00897b',
+              backgroundColor: 'rgba(0, 137, 123, 0.1)',
+              fill: true,
+              tension: 0.3,
+              pointRadius: 0,
+              pointHoverRadius: 5,
+            }]
+          },
+          options: {
+            ...chartOptions,
+            scales: {
+              ...chartOptions.scales,
+              y: {
+                ...chartOptions.scales.y,
+                title: {
+                  display: true,
+                  text: '°F'
+                }
+              }
+            }
+          }
+        });
       }
 
       async function fetchCurrentData() {
@@ -632,17 +855,81 @@
           const ageText = data.age_minutes === 0 ? 'just now' :
                          data.age_minutes === 1 ? '1 min ago' :
                          `${data.age_minutes} min ago`;
-          document.getElementById('sensor-info').textContent =
-            `Sensor: ${data.sensor_id} | Last update: ${ageText}`;
+
+          let sensorInfo = `Sensor: ${data.sensor_id} | Last update: ${ageText}`;
+          if (data.uptime_s !== null && data.uptime_s !== undefined) {
+            const uptimeStr = formatUptime(data.uptime_s);
+            sensorInfo += ` | Uptime: ${uptimeStr}`;
+          }
+          if (data.boot_count !== null && data.boot_count !== undefined) {
+            sensorInfo += ` | Boots: ${data.boot_count}`;
+          }
+          document.getElementById('sensor-info').textContent = sensorInfo;
 
           // Mark as stale if needed
           const cards = document.querySelectorAll('.reading-card');
           cards.forEach(card => {
             card.classList.toggle('stale', data.is_stale);
           });
+
+          // BME280 specific fields
+          if (data.pressure_hpa !== null && data.pressure_hpa !== undefined) {
+            hasBME280 = true;
+
+            // Show BME280 cards and charts
+            document.getElementById('pressure-card').style.display = 'block';
+            document.getElementById('dewpoint-card').style.display = 'block';
+            document.getElementById('forecast-section').style.display = 'block';
+            document.getElementById('pressure-chart-container').style.display = 'block';
+            document.getElementById('dewpoint-chart-container').style.display = 'block';
+
+            // Update pressure
+            document.getElementById('current-pressure').textContent = `${data.pressure_hpa} hPa`;
+
+            // Color code pressure card
+            const pressureCard = document.getElementById('pressure-card');
+            pressureCard.classList.remove('pressure-high', 'pressure-low');
+            if (data.pressure_hpa > 1020) {
+              pressureCard.classList.add('pressure-high');
+            } else if (data.pressure_hpa < 1000) {
+              pressureCard.classList.add('pressure-low');
+            }
+          }
+
+          // Dew point
+          if (data.dew_point_f !== null && data.dew_point_f !== undefined) {
+            document.getElementById('current-dewpoint').textContent = `${data.dew_point_f}°F`;
+            document.getElementById('dewpoint-comfort').textContent = getDewPointComfort(data.dew_point_f);
+          }
+
         } catch (e) {
           console.error('Failed to fetch current data:', e);
         }
+      }
+
+      function formatUptime(seconds) {
+        if (seconds >= 86400) {
+          const days = Math.floor(seconds / 86400);
+          const hours = Math.floor((seconds % 86400) / 3600);
+          return `${days}d ${hours}h`;
+        } else if (seconds >= 3600) {
+          const hours = Math.floor(seconds / 3600);
+          const mins = Math.floor((seconds % 3600) / 60);
+          return `${hours}h ${mins}m`;
+        } else {
+          return `${Math.floor(seconds / 60)}m`;
+        }
+      }
+
+      function getDewPointComfort(dewF) {
+        // Dew point comfort levels in Fahrenheit
+        if (dewF < 50) return 'Dry & comfortable';
+        if (dewF < 55) return 'Comfortable';
+        if (dewF < 60) return 'OK for most';
+        if (dewF < 65) return 'Slightly humid';
+        if (dewF < 70) return 'Humid';
+        if (dewF < 75) return 'Very humid';
+        return 'Oppressive';
       }
 
       async function fetchHistory() {
@@ -670,6 +957,12 @@
             document.getElementById('hum-min').textContent = `${humStats.min}%`;
             document.getElementById('hum-max').textContent = `${humStats.max}%`;
             document.getElementById('hum-avg').textContent = `${humStats.avg?.toFixed(1)}%`;
+
+            // Pressure stats (BME280)
+            if (stats.pressure) {
+              document.getElementById('pressure-min').textContent = `${stats.pressure.min}`;
+              document.getElementById('pressure-max').textContent = `${stats.pressure.max}`;
+            }
           }
 
           // Prepare chart data (readings are in DESC order, reverse for chart)
@@ -685,15 +978,186 @@
             y: r.humidity
           }));
 
-          // Update charts
+          // Update temp and humidity charts
           tempChart.data.datasets[0].data = tempData;
           tempChart.update('none');
 
           humidityChart.data.datasets[0].data = humData;
           humidityChart.update('none');
 
+          // Pressure and dew point charts (BME280)
+          const pressureReadings = readings.filter(r => r.pressure_hpa !== null && r.pressure_hpa !== undefined);
+
+          if (pressureReadings.length > 0) {
+            hasBME280 = true;
+
+            const pressureData = pressureReadings.map(r => ({
+              x: new Date(r.timestamp),
+              y: r.pressure_hpa
+            }));
+
+            const dewpointData = readings
+              .filter(r => r.dew_point_c !== null && r.dew_point_c !== undefined)
+              .map(r => ({
+                x: new Date(r.timestamp),
+                y: (r.dew_point_c * 9/5) + 32
+              }));
+
+            pressureChart.data.datasets[0].data = pressureData;
+            pressureChart.update('none');
+
+            if (dewpointData.length > 0) {
+              dewpointChart.data.datasets[0].data = dewpointData;
+              dewpointChart.update('none');
+            }
+
+            // Analyze pressure trend for weather forecast
+            analyzePressureTrend(pressureReadings);
+          }
+
         } catch (e) {
           console.error('Failed to fetch history:', e);
+        }
+      }
+
+      function analyzePressureTrend(readings) {
+        if (readings.length < 2) {
+          document.getElementById('forecast-summary').textContent = 'Insufficient data';
+          return;
+        }
+
+        const now = new Date();
+        const threeHoursAgo = new Date(now - 3 * 60 * 60 * 1000);
+
+        // Get readings from last 3 hours
+        const recentReadings = readings.filter(r => new Date(r.timestamp) >= threeHoursAgo);
+
+        if (recentReadings.length < 2) {
+          document.getElementById('forecast-summary').textContent = 'Need more data for forecast';
+          document.getElementById('forecast-confidence').textContent = 'Low confidence';
+          document.getElementById('forecast-confidence').classList.add('low');
+          return;
+        }
+
+        // Calculate pressure change over 3 hours
+        const oldestRecent = recentReadings[0];
+        const newestRecent = recentReadings[recentReadings.length - 1];
+        const pressureChange = newestRecent.pressure_hpa - oldestRecent.pressure_hpa;
+        const currentPressure = newestRecent.pressure_hpa;
+
+        // Update trend display
+        const trendEl = document.getElementById('pressure-trend');
+        const directionEl = document.getElementById('pressure-direction');
+        const changeEl = document.getElementById('pressure-change-3h');
+        const stateEl = document.getElementById('pressure-state');
+
+        const changeStr = pressureChange >= 0 ? `+${pressureChange.toFixed(1)}` : pressureChange.toFixed(1);
+        changeEl.textContent = `${changeStr} hPa`;
+
+        // Pressure state classification
+        if (currentPressure > 1025) {
+          stateEl.textContent = 'Very High';
+        } else if (currentPressure > 1015) {
+          stateEl.textContent = 'High';
+        } else if (currentPressure > 1005) {
+          stateEl.textContent = 'Normal';
+        } else if (currentPressure > 995) {
+          stateEl.textContent = 'Low';
+        } else {
+          stateEl.textContent = 'Very Low';
+        }
+
+        // Weather prediction based on pressure trend
+        let icon, summary, description, trend, trendClass;
+
+        if (pressureChange < -2) {
+          // Rapidly falling
+          icon = '⛈️';
+          summary = 'Storms Likely';
+          description = 'Barometric pressure is dropping rapidly. Expect deteriorating conditions with possible rain or storms within 6-12 hours.';
+          trend = '↓↓ Falling fast';
+          trendClass = 'pressure-falling';
+        } else if (pressureChange < -1) {
+          // Falling
+          icon = '🌧️';
+          summary = 'Rain Possible';
+          description = 'Pressure is falling steadily. Weather is changing - clouds and possible precipitation expected within 12-24 hours.';
+          trend = '↓ Falling';
+          trendClass = 'pressure-falling';
+        } else if (pressureChange < -0.5) {
+          // Slowly falling
+          icon = '🌥️';
+          summary = 'Change Coming';
+          description = 'Slight pressure drop detected. Current conditions may slowly deteriorate over the next day.';
+          trend = '↘ Slight drop';
+          trendClass = 'pressure-falling';
+        } else if (pressureChange > 2) {
+          // Rapidly rising
+          icon = '☀️';
+          summary = 'Clear & Fair';
+          description = 'Pressure rising quickly. Expect clearing skies and fair weather. Great conditions ahead!';
+          trend = '↑↑ Rising fast';
+          trendClass = 'pressure-rising';
+        } else if (pressureChange > 1) {
+          // Rising
+          icon = '🌤️';
+          summary = 'Improving';
+          description = 'Pressure is rising steadily. Weather is improving - expect clearer skies and drier conditions.';
+          trend = '↑ Rising';
+          trendClass = 'pressure-rising';
+        } else if (pressureChange > 0.5) {
+          // Slowly rising
+          icon = '⛅';
+          summary = 'Gradual Improvement';
+          description = 'Slight pressure increase. Conditions should slowly improve over the next day.';
+          trend = '↗ Slight rise';
+          trendClass = 'pressure-rising';
+        } else {
+          // Steady
+          icon = '➡️';
+          summary = 'Stable Conditions';
+          description = 'Pressure is steady. Current weather conditions are likely to continue for the next 12-24 hours.';
+          trend = '→ Steady';
+          trendClass = 'pressure-steady';
+        }
+
+        // Additional context based on absolute pressure
+        if (currentPressure > 1020 && pressureChange >= -0.5) {
+          icon = '☀️';
+          if (pressureChange > 0.5) {
+            summary = 'High Pressure - Fair';
+          } else {
+            summary = 'High Pressure - Stable';
+          }
+          description += ' High pressure system in place - generally means fair weather.';
+        } else if (currentPressure < 1000 && pressureChange <= 0.5) {
+          icon = '🌧️';
+          if (pressureChange < -0.5) {
+            summary = 'Low Pressure - Unsettled';
+          } else {
+            summary = 'Low Pressure';
+          }
+          description += ' Low pressure system - typically associated with clouds and precipitation.';
+        }
+
+        // Update UI
+        document.getElementById('forecast-icon').textContent = icon;
+        document.getElementById('forecast-summary').textContent = summary;
+        document.getElementById('forecast-description').textContent = description;
+        document.getElementById('pressure-direction').textContent = trend;
+
+        trendEl.textContent = trend.charAt(0);
+        trendEl.className = 'stat-value ' + trendClass;
+        directionEl.className = 'metric-value ' + trendClass;
+
+        // Confidence based on data quantity
+        const confidence = recentReadings.length >= 10 ? 'High confidence' : 'Moderate confidence';
+        const confEl = document.getElementById('forecast-confidence');
+        confEl.textContent = confidence;
+        confEl.classList.remove('low');
+        if (recentReadings.length < 5) {
+          confEl.textContent = 'Low confidence';
+          confEl.classList.add('low');
         }
       }
 
@@ -825,7 +1289,7 @@
         const pageData = allTableData.slice(startIdx, endIdx);
 
         if (pageData.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 20px;">No data</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 20px;">No data</td></tr>';
           return;
         }
 
@@ -834,14 +1298,23 @@
           const timestamp = new Date(row.timestamp);
           const timeStr = timestamp.toLocaleString();
 
+          // Handle optional BME280 fields
+          const pressure = row.pressure_hpa !== null && row.pressure_hpa !== undefined
+            ? row.pressure_hpa.toFixed(1)
+            : '--';
+          const dewF = row.dew_point_c !== null && row.dew_point_c !== undefined
+            ? ((row.dew_point_c * 9/5) + 32).toFixed(1)
+            : '--';
+
           return `
             <tr>
               <td class="id-col">${row.id}</td>
               <td class="timestamp-col">${timeStr}</td>
               <td class="sensor-col">${row.sensor_id}</td>
-              <td class="value-col temp-col">${row.temperature_c.toFixed(1)}</td>
               <td class="value-col temp-col">${tempF}</td>
               <td class="value-col humidity-col">${row.humidity.toFixed(1)}</td>
+              <td class="value-col pressure-col">${pressure}</td>
+              <td class="value-col dewpoint-col">${dewF}</td>
             </tr>
           `;
         }).join('');
@@ -875,17 +1348,30 @@
           return;
         }
 
-        // Build CSV content
-        const headers = ['id', 'timestamp', 'sensor_id', 'temperature_c', 'temperature_f', 'humidity'];
+        // Build CSV content with BME280 fields
+        const headers = ['id', 'timestamp', 'sensor_id', 'temperature_c', 'temperature_f', 'humidity', 'pressure_hpa', 'dew_point_c', 'dew_point_f'];
         const rows = allTableData.map(row => {
           const tempF = ((row.temperature_c * 9/5) + 32).toFixed(2);
+          const pressure = row.pressure_hpa !== null && row.pressure_hpa !== undefined
+            ? row.pressure_hpa.toFixed(2)
+            : '';
+          const dewC = row.dew_point_c !== null && row.dew_point_c !== undefined
+            ? row.dew_point_c.toFixed(2)
+            : '';
+          const dewF = row.dew_point_c !== null && row.dew_point_c !== undefined
+            ? ((row.dew_point_c * 9/5) + 32).toFixed(2)
+            : '';
+
           return [
             row.id,
             row.timestamp,
             row.sensor_id,
             row.temperature_c.toFixed(2),
             tempF,
-            row.humidity.toFixed(2)
+            row.humidity.toFixed(2),
+            pressure,
+            dewC,
+            dewF
           ].join(',');
         });
 
