@@ -45,6 +45,8 @@ _state_manager: StateManager = None
 _scheduler: "HubScheduler" = None
 _renderer: "LayoutRenderer" = None
 _display_driver: "DisplayDriver" = None
+_rotate_display_callback = None
+_rotate_photos_callback = None
 
 UPLOAD_DIR = Path("uploads")
 UPLOAD_DIR.mkdir(exist_ok=True)
@@ -55,13 +57,18 @@ def init_routes(
     scheduler: "HubScheduler",
     renderer: "LayoutRenderer",
     display_driver: "DisplayDriver",
+    rotate_display_callback=None,
+    rotate_photos_callback=None,
 ) -> None:
     """Initialize route dependencies."""
     global _state_manager, _scheduler, _renderer, _display_driver
+    global _rotate_display_callback, _rotate_photos_callback
     _state_manager = state_manager
     _scheduler = scheduler
     _renderer = renderer
     _display_driver = display_driver
+    _rotate_display_callback = rotate_display_callback
+    _rotate_photos_callback = rotate_photos_callback
 
 
 @router.get("/status", response_model=StatusResponse)
@@ -145,19 +152,19 @@ async def set_mode(req: ModeRequest):
     if req.mode == "manual":
         _scheduler.pause_rotation()
     elif req.mode == "auto_rotate":
-        # Import here to avoid circular imports
-        from main import _rotate_display
-        _scheduler.schedule_display_rotation(
-            _rotate_display,
-            config.schedule.rotation_interval_minutes,
-        )
+        if _rotate_display_callback:
+            _scheduler.schedule_display_rotation(
+                _rotate_display_callback,
+                config.schedule.rotation_interval_minutes,
+            )
+        _scheduler.resume_rotation()
     elif req.mode == "photo_slideshow":
-        # Import here to avoid circular imports
-        from main import _rotate_photos
-        _scheduler.schedule_display_rotation(
-            _rotate_photos,
-            config.schedule.photo_interval_minutes,
-        )
+        if _rotate_photos_callback:
+            _scheduler.schedule_display_rotation(
+                _rotate_photos_callback,
+                config.schedule.photo_interval_minutes,
+            )
+        _scheduler.resume_rotation()
 
     logger.info(f"Mode changed to: {req.mode}")
 

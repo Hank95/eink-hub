@@ -153,8 +153,15 @@ async def lifespan(app: FastAPI):
     # Set state manager for photo frame widget
     set_photo_state_manager(state_manager)
 
-    # Initialize API routes
-    init_routes(state_manager, scheduler, renderer, display_driver)
+    # Initialize API routes with rotation callbacks
+    init_routes(
+        state_manager,
+        scheduler,
+        renderer,
+        display_driver,
+        rotate_display_callback=_rotate_display,
+        rotate_photos_callback=_rotate_photos,
+    )
 
     # Initialize enabled providers
     for name, prov_config in config.providers.items():
