@@ -20,8 +20,9 @@ class DisplayState(BaseModel):
     current_layout: Optional[str] = None
     current_image: Optional[str] = None
     last_updated: Optional[datetime] = None
-    mode: str = "manual"  # "manual" | "auto_rotate"
+    mode: str = "manual"  # "manual" | "auto_rotate" | "photo_slideshow"
     rotation_index: int = 0
+    photo_index: int = 0  # Tracks position in photo rotation
 
 
 class ProviderState(BaseModel):

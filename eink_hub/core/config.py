@@ -55,17 +55,36 @@ class LayoutConfig(BaseModel):
 class ScheduleConfig(BaseModel):
     """Scheduler configuration."""
 
-    mode: str = "manual"  # "manual" | "auto_rotate"
+    mode: str = "manual"  # "manual" | "auto_rotate" | "photo_slideshow"
     rotation_interval_minutes: int = 30
     layout_sequence: List[str] = Field(default_factory=list)
     quiet_hours: Optional[Dict[str, str]] = None  # {"start": "22:00", "end": "07:00"}
 
+    # Photo slideshow settings
+    photo_interval_minutes: int = 5
+    photo_fit_mode: str = "fit"  # "fit" (letterbox) or "fill" (crop)
+    photo_rotation: int = 0  # 0, 90, 180, 270
+
     @field_validator("mode")
     @classmethod
     def validate_mode(cls, v: str) -> str:
-        valid_modes = {"manual", "auto_rotate"}
+        valid_modes = {"manual", "auto_rotate", "photo_slideshow"}
         if v not in valid_modes:
             raise ValueError(f"mode must be one of {valid_modes}")
+        return v
+
+    @field_validator("photo_fit_mode")
+    @classmethod
+    def validate_fit_mode(cls, v: str) -> str:
+        if v not in ("fit", "fill"):
+            raise ValueError("photo_fit_mode must be 'fit' or 'fill'")
+        return v
+
+    @field_validator("photo_rotation")
+    @classmethod
+    def validate_rotation(cls, v: int) -> int:
+        if v not in (0, 90, 180, 270):
+            raise ValueError("photo_rotation must be 0, 90, 180, or 270")
         return v
 
 

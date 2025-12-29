@@ -12,14 +12,23 @@ logging:
   file: logs/eink-hub.log
 
 schedule:
-  mode: manual  # manual | auto_rotate
-  rotation_interval_minutes: 30
+  mode: auto_rotate  # manual | auto_rotate | photo_slideshow
+  rotation_interval_minutes: 5
   layout_sequence:
     - composite_hub
     - strava_dashboard
+    - daily_rundown
+    - week_view
+    - weather_view
+    - indoor_climate
+    - photo_frame
   quiet_hours:
     start: "22:00"
     end: "07:00"
+  # Photo slideshow settings (for photo_slideshow mode)
+  photo_interval_minutes: 5
+  photo_fit_mode: fit  # fit (letterbox) | fill (crop)
+  photo_rotation: 0    # 0, 90, 180, 270
 
 providers:
   strava:
@@ -249,3 +258,16 @@ layouts:
         options:
           format: "12h"
           show_day: true
+
+  photo_frame:
+    name: "Photo Frame"
+    widgets:
+      - type: photo_frame
+        x: 0
+        y: 0
+        width: 800
+        height: 480
+        options:
+          fit_mode: fit
+          rotation: 0
+          show_filename: false

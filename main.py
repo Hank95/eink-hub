@@ -13,6 +13,7 @@ from fastapi.staticfiles import StaticFiles
 load_dotenv()
 
 from eink_hub.core.config import load_config, get_config, set_config
+from eink_hub.core.image_processor import list_images, process_for_eink
 from eink_hub.core.logging import setup_logging, get_logger
 from eink_hub.core.scheduler import HubScheduler
 from eink_hub.core.state import StateManager
@@ -20,6 +21,7 @@ from eink_hub.providers.registry import ProviderRegistry
 from eink_hub.layouts.renderer import LayoutRenderer
 from eink_hub.display.driver import DisplayDriver
 from eink_hub.api.routes import router as api_router, init_routes
+from eink_hub.widgets.photo_frame import set_state_manager as set_photo_state_manager
 
 # Import providers to trigger registration
 from eink_hub.providers import strava, weather, calendar, todoist, indoor_sensor  # noqa: F401
@@ -72,6 +74,48 @@ async def _rotate_display() -> None:
     logger.info(f"Rotated to layout: {next_layout}")
 
 
+async def _rotate_photos() -> None:
+    """Rotate to the next photo in slideshow mode."""
+    config = get_config()
+    state = state_manager.get_state()
+
+    # Get list of photos
+    photos = list_images(Path("uploads"))
+    if not photos:
+        logger.warning("No photos in uploads/ for slideshow")
+        return
+
+    # Get current photo index
+    current_index = state.display.photo_index
+    next_index = (current_index + 1) % len(photos)
+
+    # Update state
+    state_manager.update_display_state(photo_index=next_index)
+
+    # Process and display the photo
+    photo_path = photos[next_index]["path"]
+
+    try:
+        processed = process_for_eink(
+            photo_path,
+            rotation=config.schedule.photo_rotation,
+            fit_mode=config.schedule.photo_fit_mode,
+        )
+
+        # Save to preview
+        output_path = Path("previews") / "photo_slideshow.png"
+        output_path.parent.mkdir(exist_ok=True)
+        processed.save(output_path)
+
+        # Send to display
+        display_driver.send_to_display(output_path, "photo_slideshow")
+
+        logger.info(f"Photo slideshow: {photos[next_index]['filename']} (index {next_index})")
+
+    except Exception as e:
+        logger.error(f"Failed to display photo {photo_path}: {e}")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup and shutdown logic."""
@@ -105,6 +149,9 @@ async def lifespan(app: FastAPI):
         state_manager=state_manager,
         mock_mode=config.display.mock_mode,
     )
+
+    # Set state manager for photo frame widget
+    set_photo_state_manager(state_manager)
 
     # Initialize API routes
     init_routes(state_manager, scheduler, renderer, display_driver)
@@ -144,6 +191,11 @@ async def lifespan(app: FastAPI):
         scheduler.schedule_display_rotation(
             _rotate_display,
             config.schedule.rotation_interval_minutes,
+        )
+    elif state.display.mode == "photo_slideshow":
+        scheduler.schedule_display_rotation(
+            _rotate_photos,
+            config.schedule.photo_interval_minutes,
         )
 
     # Set quiet hours if configured

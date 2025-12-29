@@ -134,16 +134,30 @@ async def set_display(req: DisplayRequest, background_tasks: BackgroundTasks):
 
 @router.post("/mode", response_model=SuccessResponse)
 async def set_mode(req: ModeRequest):
-    """Switch between manual and auto-rotate mode."""
-    if req.mode not in ("manual", "auto_rotate"):
-        raise HTTPException(400, "Mode must be 'manual' or 'auto_rotate'")
+    """Switch between manual, auto-rotate, and photo slideshow modes."""
+    valid_modes = ("manual", "auto_rotate", "photo_slideshow")
+    if req.mode not in valid_modes:
+        raise HTTPException(400, f"Mode must be one of: {', '.join(valid_modes)}")
 
+    config = get_config()
     _state_manager.update_display_state(mode=req.mode)
 
     if req.mode == "manual":
         _scheduler.pause_rotation()
-    else:
-        _scheduler.resume_rotation()
+    elif req.mode == "auto_rotate":
+        # Import here to avoid circular imports
+        from main import _rotate_display
+        _scheduler.schedule_display_rotation(
+            _rotate_display,
+            config.schedule.rotation_interval_minutes,
+        )
+    elif req.mode == "photo_slideshow":
+        # Import here to avoid circular imports
+        from main import _rotate_photos
+        _scheduler.schedule_display_rotation(
+            _rotate_photos,
+            config.schedule.photo_interval_minutes,
+        )
 
     logger.info(f"Mode changed to: {req.mode}")
 
