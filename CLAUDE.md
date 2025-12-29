@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-E-Ink Display Hub is a modular Python/FastAPI application for Raspberry Pi that controls a Waveshare 7.5" E-Ink display (V2, 800x480, B/W). It features a plugin-based architecture for data providers (Strava, Weather, Calendar, Todoist) and a widget-based layout system for composable displays.
+E-Ink Display Hub is a modular Python/FastAPI application for Raspberry Pi that controls a Waveshare 7.5" E-Ink display (V2, 800x480, B/W). It features a plugin-based architecture for data providers (Strava, Weather, Calendar, Indoor Sensor) and a widget-based layout system for composable displays.
 
 ## Running the Application
 
@@ -23,7 +23,7 @@ uvicorn main:app --host 0.0.0.0 --port 8000
 ```
 eink_hub/
 ├── core/           # Infrastructure (config, logging, state, scheduler)
-├── providers/      # Data sources (strava, weather, calendar, todoist)
+├── providers/      # Data sources (strava, weather, calendar, indoor_sensor)
 ├── widgets/        # Display components (clock, weather, calendar, etc.)
 ├── layouts/        # Layout rendering engine
 ├── display/        # E-ink driver wrapper
@@ -84,7 +84,6 @@ STRAVA_CLIENT_SECRET=...
 STRAVA_REFRESH_TOKEN=...
 OPENWEATHER_API_KEY=...
 CALENDAR_ICAL_URL=...
-TODOIST_API_TOKEN=...  # optional
 ```
 
 ## Hardware Constraints

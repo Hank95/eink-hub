@@ -24,7 +24,7 @@ from eink_hub.api.routes import router as api_router, init_routes
 from eink_hub.widgets.photo_frame import set_state_manager as set_photo_state_manager
 
 # Import providers to trigger registration
-from eink_hub.providers import strava, weather, calendar, todoist, indoor_sensor  # noqa: F401
+from eink_hub.providers import strava, weather, calendar, indoor_sensor  # noqa: F401
 
 logger = get_logger("main")
 

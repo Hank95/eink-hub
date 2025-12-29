@@ -54,14 +54,6 @@ providers:
     options:
       ical_url: ${CALENDAR_ICAL_URL}
 
-  todoist:
-    enabled: true
-    refresh_interval_minutes: 10
-    credentials:
-      api_token: ${TODOIST_API_TOKEN}
-    options:
-      priority_filter: 4  # Minimum priority (1-4, 1 is highest, 4 shows all)
-
   indoor_sensor:
     enabled: true
     refresh_interval_minutes: 2
@@ -106,17 +98,8 @@ layouts:
         x: 420
         y: 130
         width: 360
-        height: 120
+        height: 240
         provider: strava
-
-      - type: todoist
-        x: 420
-        y: 270
-        width: 360
-        height: 120
-        provider: todoist
-        options:
-          max_tasks: 4
 
       - type: indoor_sensor
         x: 20
