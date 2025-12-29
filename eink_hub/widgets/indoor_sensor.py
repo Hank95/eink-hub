@@ -44,9 +44,12 @@ class IndoorSensorWidget(BaseWidget):
             self._render_no_data(draw, error_msg)
             return
 
+        layout_mode = self.options.get("layout_mode", "default")
         compact = self.options.get("compact", False)
 
-        if compact:
+        if layout_mode == "dashboard":
+            self._render_dashboard(draw, data)
+        elif compact:
             self._render_compact(draw, data)
         else:
             self._render_full(draw, data)
@@ -91,6 +94,178 @@ class IndoorSensorWidget(BaseWidget):
             warn_font = self._load_font(10)
             stale_x = x + 120 if pressure else x + 50
             draw.text((stale_x, y), "(stale)", font=warn_font, fill=128)
+
+    def _render_dashboard(
+        self,
+        draw: ImageDraw.ImageDraw,
+        data: Dict[str, Any],
+    ) -> None:
+        """
+        Render full-page dashboard layout optimized for e-ink display.
+
+        Layout:
+        +--------------------------------------------------+
+        | Title                                   Time     |
+        +------------------------+-------------------------+
+        |                        |      FORECAST           |
+        |      72°F              |   ↑ +1.2 hPa/3hr        |
+        |                        |   Weather improving     |
+        |   58% Humidity         |   High pressure         |
+        |   1018 hPa Pressure    |                         |
+        +------------------------+-------------------------+
+        | Temp Graph                                       |
+        | Humidity Graph                                   |
+        | Pressure Graph                                   |
+        +--------------------------------------------------+
+        """
+        use_f = self.options.get("use_fahrenheit", True)
+        title = self.options.get("title", "Local Weather")
+
+        # Get values
+        temp = data.get("temperature_f" if use_f else "temperature_c", "--")
+        humidity = data.get("humidity", "--")
+        pressure = data.get("pressure_hpa")
+        unit = "F" if use_f else "C"
+        age_minutes = data.get("age_minutes", 0)
+        is_stale = data.get("is_stale", False)
+
+        x = self.bounds.x
+        y = self.bounds.y
+        width = self.bounds.width
+        height = self.bounds.height
+
+        # === HEADER ROW ===
+        header_font = self._load_font(16, bold=True)
+        draw.text((x + 10, y + 8), title, font=header_font, fill=0)
+
+        # Time on the right
+        import datetime as dt
+        now = dt.datetime.now()
+        time_str = now.strftime("%I:%M %p").lstrip("0")
+        date_str = now.strftime("%a, %b %d")
+        time_font = self._load_font(14)
+        draw.text((x + width - 120, y + 5), time_str, font=time_font, fill=0)
+        date_font = self._load_font(11)
+        draw.text((x + width - 120, y + 22), date_str, font=date_font, fill=128)
+
+        # Divider line
+        draw.line([(x + 5, y + 40), (x + width - 5, y + 40)], fill=0, width=1)
+
+        # === MAIN CONTENT AREA ===
+        content_y = y + 48
+        left_width = int(width * 0.55)
+        right_x = x + left_width + 20
+
+        # --- LEFT SIDE: Current readings ---
+
+        # Large temperature
+        temp_font = self._load_font(72, bold=True)
+        temp_str = f"{temp}°"
+        draw.text((x + 20, content_y), temp_str, font=temp_font, fill=0)
+
+        # Unit label
+        unit_font = self._load_font(24)
+        draw.text((x + 160, content_y + 10), unit, font=unit_font, fill=0)
+
+        # Secondary readings below temperature
+        secondary_y = content_y + 85
+        label_font = self._load_font(14)
+        value_font = self._load_font(20, bold=True)
+
+        # Humidity
+        draw.text((x + 20, secondary_y), "Humidity", font=label_font, fill=128)
+        draw.text((x + 20, secondary_y + 16), f"{humidity}%", font=value_font, fill=0)
+
+        # Pressure
+        if pressure is not None:
+            draw.text((x + 120, secondary_y), "Pressure", font=label_font, fill=128)
+            draw.text((x + 120, secondary_y + 16), f"{pressure} hPa", font=value_font, fill=0)
+
+        # Last updated
+        update_y = secondary_y + 45
+        update_font = self._load_font(10)
+        if age_minutes == 0:
+            age_text = "Updated just now"
+        elif age_minutes == 1:
+            age_text = "Updated 1 min ago"
+        else:
+            age_text = f"Updated {age_minutes} min ago"
+        if is_stale:
+            age_text += " (stale!)"
+        draw.text((x + 20, update_y), age_text, font=update_font, fill=128 if is_stale else 0)
+
+        # --- RIGHT SIDE: Forecast ---
+
+        # Forecast box
+        forecast_width = width - left_width - 40
+        draw.rectangle(
+            [right_x, content_y, right_x + forecast_width, content_y + 130],
+            outline=0,
+            width=1
+        )
+
+        # Forecast header
+        forecast_header_font = self._load_font(14, bold=True)
+        draw.text((right_x + 10, content_y + 8), "FORECAST", font=forecast_header_font, fill=0)
+
+        # Calculate forecast if we have pressure data
+        if pressure is not None and "history" in data:
+            forecast = self._calculate_pressure_forecast(data["history"], pressure)
+
+            # Trend with arrow
+            trend_font = self._load_font(28, bold=True)
+            draw.text((right_x + 10, content_y + 30), forecast["trend_symbol"], font=trend_font, fill=0)
+
+            # Change rate
+            change_font = self._load_font(14)
+            change_str = f"{forecast['change_3hr']:+.1f} hPa/3hr"
+            draw.text((right_x + 50, content_y + 38), change_str, font=change_font, fill=0)
+
+            # Prediction text
+            pred_font = self._load_font(14, bold=True)
+            draw.text((right_x + 10, content_y + 70), forecast["prediction"], font=pred_font, fill=0)
+
+            # Conditions
+            if "conditions" in forecast:
+                cond_font = self._load_font(12)
+                draw.text((right_x + 10, content_y + 92), forecast["conditions"], font=cond_font, fill=128)
+        else:
+            no_data_font = self._load_font(12)
+            draw.text((right_x + 10, content_y + 50), "No pressure data", font=no_data_font, fill=128)
+
+        # === GRAPHS SECTION ===
+        graph_y = content_y + 145
+        graph_height = 45
+        graph_spacing = 12
+        graph_width = width - 80
+
+        if "history" in data and len(data["history"]) >= 2:
+            history = data["history"]
+            temp_key = "temperature_f" if use_f else "temperature_c"
+            temp_series = [h[temp_key] for h in history]
+            humidity_series = [h["humidity"] for h in history]
+
+            # Temperature graph
+            self._draw_sparkline(
+                draw, temp_series, x + 10, graph_y, graph_width, graph_height,
+                label=f"Temperature °{unit} (6hr)", show_range=True
+            )
+            graph_y += graph_height + graph_spacing + 8
+
+            # Humidity graph
+            self._draw_sparkline(
+                draw, humidity_series, x + 10, graph_y, graph_width, graph_height,
+                label="Humidity % (6hr)", show_range=True
+            )
+            graph_y += graph_height + graph_spacing + 8
+
+            # Pressure graph
+            pressure_series = [h.get("pressure_hpa") for h in history if h.get("pressure_hpa") is not None]
+            if len(pressure_series) >= 2:
+                self._draw_sparkline(
+                    draw, pressure_series, x + 10, graph_y, graph_width, graph_height,
+                    label="Pressure hPa (6hr)", show_range=True
+                )
 
     def _render_full(
         self,
