@@ -20,7 +20,7 @@ schedule:
     - daily_rundown
     - week_view
     - weather_view
-    - indoor_climate
+    - local_weather
     - photo_frame
   quiet_hours:
     start: "22:00"
@@ -109,7 +109,7 @@ layouts:
         provider: indoor_sensor
         options:
           compact: true
-          title: "Inside"
+          title: "Outside"
 
   strava_dashboard:
     name: "Strava Weekly"
@@ -196,8 +196,8 @@ layouts:
           show_daily: true
           show_details: true
 
-  indoor_climate:
-    name: "Indoor Climate"
+  local_weather:
+    name: "Local Weather"
     widgets:
       - type: text
         x: 0
@@ -205,29 +205,32 @@ layouts:
         width: 800
         height: 40
         options:
-          text: "Indoor Climate"
-          font_size: 32
+          text: "Outside My Window - Charleston, SC"
+          font_size: 28
           bold: true
           center: true
 
       - type: indoor_sensor
         x: 40
         y: 60
-        width: 320
+        width: 360
         height: 400
         provider: indoor_sensor
         options:
           compact: false
-          title: "Living Room"
+          title: "Window Sensor"
           show_stats: true
           show_graph: true
+          show_pressure: true
+          show_dew_point: true
+          show_forecast: true
           use_fahrenheit: true
 
       - type: weather
         x: 420
         y: 60
         width: 340
-        height: 180
+        height: 160
         provider: weather
         options:
           compact: false
@@ -235,7 +238,7 @@ layouts:
 
       - type: clock
         x: 420
-        y: 280
+        y: 240
         width: 340
         height: 80
         options:

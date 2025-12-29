@@ -13,7 +13,7 @@ from .registry import WidgetRegistry
 @WidgetRegistry.register("indoor_sensor")
 class IndoorSensorWidget(BaseWidget):
     """
-    Indoor sensor display widget.
+    Sensor display widget for ESP32 DHT11/BME280 data.
 
     Shows temperature, humidity, and optionally pressure/dew point
     from ESP32 sensors (DHT11 or BME280).
@@ -26,7 +26,8 @@ class IndoorSensorWidget(BaseWidget):
     - show_pressure: bool (default: True) - Show barometric pressure (BME280 only)
     - show_dew_point: bool (default: False) - Show dew point temperature
     - show_device_health: bool (default: False) - Show uptime/boot count
-    - title: str (default: "Indoor") - Label for the widget
+    - show_forecast: bool (default: False) - Show pressure-based weather forecast
+    - title: str (default: "Sensor") - Label for the widget
     - use_fahrenheit: bool (default: True) - Display in Fahrenheit
     """
 
@@ -63,7 +64,7 @@ class IndoorSensorWidget(BaseWidget):
         temp = data.get("temperature_f" if use_f else "temperature_c", "--")
         humidity = data.get("humidity", "--")
         unit = "F" if use_f else "C"
-        title = self.options.get("title", "Indoor")
+        title = self.options.get("title", "Sensor")
 
         # Title
         title_font = self._load_font(12)
@@ -104,7 +105,7 @@ class IndoorSensorWidget(BaseWidget):
         temp = data.get("temperature_f" if use_f else "temperature_c", "--")
         humidity = data.get("humidity", "--")
         unit = "F" if use_f else "C"
-        title = self.options.get("title", "Indoor")
+        title = self.options.get("title", "Sensor")
         sensor_id = data.get("sensor_id", "unknown")
         age_minutes = data.get("age_minutes", 0)
         is_stale = data.get("is_stale", False)
@@ -154,6 +155,33 @@ class IndoorSensorWidget(BaseWidget):
             dew_font = self._load_font(16, bold=True)
             draw.text((x, y), f"{dew_point}°{unit}", font=dew_font, fill=0)
             y += 22
+
+        # Weather Forecast (based on pressure trend)
+        show_forecast = self.options.get("show_forecast", False)
+        if show_forecast and pressure is not None and "history" in data:
+            forecast = self._calculate_pressure_forecast(data["history"], pressure)
+
+            y += 4
+            draw.text((x, y), "Forecast", font=hum_label_font, fill=0)
+            y += 14
+
+            # Trend with symbol
+            trend_font = self._load_font(14, bold=True)
+            change_str = f"{forecast['change_3hr']:+.1f}" if forecast['change_3hr'] != 0 else "0.0"
+            trend_text = f"{forecast['trend_symbol']} {change_str} hPa/3hr"
+            draw.text((x, y), trend_text, font=trend_font, fill=0)
+            y += 18
+
+            # Prediction
+            pred_font = self._load_font(12)
+            draw.text((x, y), forecast["prediction"], font=pred_font, fill=0)
+            y += 16
+
+            # Conditions context
+            if "conditions" in forecast:
+                cond_font = self._load_font(10)
+                draw.text((x, y), forecast["conditions"], font=cond_font, fill=128)
+                y += 12
 
         # Last updated
         detail_font = self._load_font(10)
@@ -394,6 +422,113 @@ class IndoorSensorWidget(BaseWidget):
         if label:
             label_font = self._load_font(9)
             draw.text((x + 2, y - 11), label, font=label_font, fill=0)
+
+    def _calculate_pressure_forecast(
+        self,
+        history: List[Dict[str, Any]],
+        current_pressure: float,
+    ) -> Dict[str, Any]:
+        """
+        Calculate weather forecast based on pressure trends.
+
+        Uses 3-hour pressure change to predict weather:
+        - Rising rapidly (>2 hPa/3hr): Fair weather coming
+        - Rising slowly (0.5-2 hPa/3hr): Weather improving
+        - Stable (-0.5 to 0.5 hPa/3hr): No significant change
+        - Falling slowly (-2 to -0.5 hPa/3hr): Weather may deteriorate
+        - Falling rapidly (<-2 hPa/3hr): Storm likely approaching
+
+        Also considers absolute pressure for general conditions.
+        """
+        forecast = {
+            "trend": "stable",
+            "trend_symbol": "→",
+            "change_3hr": 0.0,
+            "prediction": "No change expected",
+            "confidence": "low",
+        }
+
+        if not history or current_pressure is None:
+            return forecast
+
+        # Get pressure readings from ~3 hours ago
+        pressure_readings = [
+            (h.get("pressure_hpa"), h.get("timestamp"))
+            for h in history
+            if h.get("pressure_hpa") is not None
+        ]
+
+        if len(pressure_readings) < 2:
+            return forecast
+
+        # Find reading closest to 3 hours ago
+        import datetime as dt
+        now = dt.datetime.now()
+        target_time = now - dt.timedelta(hours=3)
+
+        oldest_pressure = None
+        oldest_time_diff = float('inf')
+
+        for pressure, timestamp in pressure_readings:
+            if isinstance(timestamp, str):
+                try:
+                    ts = dt.datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
+                    if ts.tzinfo:
+                        ts = ts.replace(tzinfo=None)
+                except:
+                    continue
+            else:
+                ts = timestamp
+
+            time_diff = abs((ts - target_time).total_seconds())
+            if time_diff < oldest_time_diff:
+                oldest_time_diff = time_diff
+                oldest_pressure = pressure
+
+        if oldest_pressure is None:
+            # Fall back to oldest reading we have
+            oldest_pressure = pressure_readings[0][0]
+
+        # Calculate 3-hour change
+        change_3hr = current_pressure - oldest_pressure
+        forecast["change_3hr"] = round(change_3hr, 1)
+
+        # Determine trend and prediction
+        if change_3hr > 2:
+            forecast["trend"] = "rising_fast"
+            forecast["trend_symbol"] = "↑↑"
+            forecast["prediction"] = "Fair weather ahead"
+            forecast["confidence"] = "high"
+        elif change_3hr > 0.5:
+            forecast["trend"] = "rising"
+            forecast["trend_symbol"] = "↑"
+            forecast["prediction"] = "Weather improving"
+            forecast["confidence"] = "medium"
+        elif change_3hr < -2:
+            forecast["trend"] = "falling_fast"
+            forecast["trend_symbol"] = "↓↓"
+            forecast["prediction"] = "Storm likely"
+            forecast["confidence"] = "high"
+        elif change_3hr < -0.5:
+            forecast["trend"] = "falling"
+            forecast["trend_symbol"] = "↓"
+            forecast["prediction"] = "Rain possible"
+            forecast["confidence"] = "medium"
+        else:
+            forecast["trend"] = "stable"
+            forecast["trend_symbol"] = "→"
+            forecast["prediction"] = "No change expected"
+            forecast["confidence"] = "medium"
+
+        # Add absolute pressure context
+        if current_pressure > 1020:
+            forecast["conditions"] = "High pressure"
+        elif current_pressure < 1000:
+            forecast["conditions"] = "Low pressure"
+        else:
+            forecast["conditions"] = "Normal pressure"
+
+        return forecast
 
     def get_required_provider(self) -> Optional[str]:
         return "indoor_sensor"
