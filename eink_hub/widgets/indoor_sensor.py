@@ -291,11 +291,11 @@ class IndoorSensorWidget(BaseWidget):
             temp_series = [h[temp_key] for h in history]
             humidity_series = [h["humidity"] for h in history]
 
-            # Calculate graph dimensions
+            # Calculate graph dimensions - sized to fit within widget bounds
             graph_width = min(self.bounds.width - 10, 200)
-            graph_height = 50
+            graph_height = 40
 
-            y += 8
+            y += 6
 
             # Temperature graph
             self._draw_sparkline(
@@ -308,7 +308,7 @@ class IndoorSensorWidget(BaseWidget):
                 label=f"Temp °{unit}",
                 show_range=True,
             )
-            y += graph_height + 18
+            y += graph_height + 14
 
             # Humidity graph
             self._draw_sparkline(
@@ -321,7 +321,7 @@ class IndoorSensorWidget(BaseWidget):
                 label="Humidity %",
                 show_range=True,
             )
-            y += graph_height + 18
+            y += graph_height + 14
 
             # Pressure graph (BME280) if available
             pressure_series = [h.get("pressure_hpa") for h in history if h.get("pressure_hpa") is not None]

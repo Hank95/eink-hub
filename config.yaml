@@ -199,51 +199,65 @@ layouts:
   local_weather:
     name: "Local Weather"
     widgets:
+      # Small header with location and time
       - type: text
-        x: 0
-        y: 10
-        width: 800
-        height: 40
+        x: 10
+        y: 5
+        width: 500
+        height: 25
         options:
           text: "Outside My Window - Charleston, SC"
-          font_size: 28
-          bold: true
-          center: true
+          font_size: 16
+          bold: false
 
+      - type: clock
+        x: 620
+        y: 5
+        width: 170
+        height: 25
+        options:
+          format: "12h"
+          show_day: false
+          compact: true
+
+      # Main sensor display - left side, full focus
       - type: indoor_sensor
-        x: 40
-        y: 60
-        width: 360
-        height: 400
+        x: 10
+        y: 35
+        width: 440
+        height: 440
         provider: indoor_sensor
         options:
           compact: false
-          title: "Window Sensor"
-          show_stats: true
+          title: "BME280 Sensor"
+          show_stats: false
           show_graph: true
           show_pressure: true
-          show_dew_point: true
+          show_dew_point: false
           show_forecast: true
           use_fahrenheit: true
 
+      # OpenWeather API data - right side for comparison
       - type: weather
-        x: 420
-        y: 60
-        width: 340
-        height: 160
+        x: 460
+        y: 35
+        width: 330
+        height: 200
         provider: weather
         options:
           compact: false
           show_humidity: true
 
-      - type: clock
-        x: 420
-        y: 240
-        width: 340
-        height: 80
+      # Additional info text
+      - type: text
+        x: 460
+        y: 250
+        width: 330
+        height: 20
         options:
-          format: "12h"
-          show_day: true
+          text: "OpenWeather API"
+          font_size: 12
+          center: true
 
   photo_frame:
     name: "Photo Frame"
