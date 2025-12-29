@@ -158,17 +158,19 @@ class IndoorSensorWidget(BaseWidget):
 
         # --- LEFT SIDE: Current readings ---
 
-        # Large temperature
+        # Large temperature with unit
         temp_font = self._load_font(72, bold=True)
         temp_str = f"{temp}°"
         draw.text((x + 20, content_y), temp_str, font=temp_font, fill=0)
 
-        # Unit label
+        # Unit label - position based on temperature text width
         unit_font = self._load_font(24)
-        draw.text((x + 160, content_y + 10), unit, font=unit_font, fill=0)
+        temp_bbox = draw.textbbox((0, 0), temp_str, font=temp_font)
+        temp_width = temp_bbox[2] - temp_bbox[0]
+        draw.text((x + 25 + temp_width, content_y + 15), unit, font=unit_font, fill=0)
 
         # Secondary readings below temperature
-        secondary_y = content_y + 85
+        secondary_y = content_y + 90
         label_font = self._load_font(14)
         value_font = self._load_font(20, bold=True)
 
@@ -182,7 +184,7 @@ class IndoorSensorWidget(BaseWidget):
             draw.text((x + 120, secondary_y + 16), f"{pressure} hPa", font=value_font, fill=0)
 
         # Last updated
-        update_y = secondary_y + 45
+        update_y = secondary_y + 42
         update_font = self._load_font(10)
         if age_minutes == 0:
             age_text = "Updated just now"
@@ -198,8 +200,9 @@ class IndoorSensorWidget(BaseWidget):
 
         # Forecast box
         forecast_width = width - left_width - 40
+        forecast_height = 120
         draw.rectangle(
-            [right_x, content_y, right_x + forecast_width, content_y + 130],
+            [right_x, content_y, right_x + forecast_width, content_y + forecast_height],
             outline=0,
             width=1
         )
@@ -234,9 +237,9 @@ class IndoorSensorWidget(BaseWidget):
             draw.text((right_x + 10, content_y + 50), "No pressure data", font=no_data_font, fill=128)
 
         # === GRAPHS SECTION ===
-        graph_y = content_y + 145
-        graph_height = 45
-        graph_spacing = 12
+        graph_y = content_y + 160
+        graph_height = 42
+        graph_spacing = 10
         graph_width = width - 80
 
         if "history" in data and len(data["history"]) >= 2:
