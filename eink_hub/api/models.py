@@ -183,3 +183,35 @@ class ImageDisplayResponse(BaseModel):
 
     status: str = "ok"
     image_path: str
+
+
+# ============================================================================
+# Message Board Models
+# ============================================================================
+
+
+class MessageRequest(BaseModel):
+    """Request to post a message to the board."""
+
+    text: str
+    category: str = "general"  # general, workout, reminder, news, weather, motivation, tip
+    priority: str = "normal"  # low, normal, high
+    expires_at: Optional[str] = None  # ISO datetime string
+
+
+class MessageResponse(BaseModel):
+    """Response after posting a message."""
+
+    status: str = "ok"
+    message_id: int
+    text: str
+    category: str
+    created_at: str
+
+
+class MessageListResponse(BaseModel):
+    """Response listing messages."""
+
+    messages: List[Dict[str, Any]]
+    total_count: int
+    active_count: int
