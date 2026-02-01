@@ -29,6 +29,9 @@ from .models import (
     ImagePreviewRequest,
     ImageDisplayRequest,
     ImageDisplayResponse,
+    MessageRequest,
+    MessageResponse,
+    MessageListResponse,
 )
 
 if TYPE_CHECKING:
@@ -705,3 +708,82 @@ async def get_strava_count():
     except Exception as e:
         logger.error(f"Failed to fetch Strava count: {e}")
         raise HTTPException(500, f"Failed to fetch Strava count: {e}")
+
+
+# ============================================================================
+# Message Board Endpoints (Larry's Messages)
+# ============================================================================
+
+
+@router.post("/message", response_model=MessageResponse)
+async def post_message(req: MessageRequest):
+    """
+    Post a message to the Larry board.
+    
+    Categories: general, workout, reminder, news, weather, motivation, tip
+    Priorities: low, normal, high
+    """
+    from ..providers.message_board import add_message
+    
+    try:
+        msg = add_message(
+            text=req.text,
+            category=req.category,
+            priority=req.priority,
+            expires_at=req.expires_at,
+        )
+        
+        return MessageResponse(
+            status="ok",
+            message_id=msg["id"],
+            text=msg["text"],
+            category=msg["category"],
+            created_at=msg["created_at"],
+        )
+    except Exception as e:
+        logger.error(f"Failed to post message: {e}")
+        raise HTTPException(500, f"Failed to post message: {e}")
+
+
+@router.get("/messages")
+async def get_messages():
+    """Get all messages."""
+    from ..providers.message_board import get_messages as fetch_messages
+    
+    try:
+        messages = fetch_messages()
+        return {
+            "messages": messages,
+            "count": len(messages),
+        }
+    except Exception as e:
+        logger.error(f"Failed to fetch messages: {e}")
+        raise HTTPException(500, f"Failed to fetch messages: {e}")
+
+
+@router.get("/messages/latest")
+async def get_latest_message(category: str = None):
+    """Get the latest non-expired message."""
+    from ..providers.message_board import get_latest_message as fetch_latest
+    
+    try:
+        msg = fetch_latest(category)
+        if msg:
+            return {"message": msg}
+        return {"message": None}
+    except Exception as e:
+        logger.error(f"Failed to fetch latest message: {e}")
+        raise HTTPException(500, f"Failed to fetch latest message: {e}")
+
+
+@router.delete("/messages")
+async def clear_all_messages():
+    """Clear all messages from the board."""
+    from ..providers.message_board import clear_messages
+    
+    try:
+        count = clear_messages()
+        return SuccessResponse(status="ok", message=f"Cleared {count} messages")
+    except Exception as e:
+        logger.error(f"Failed to clear messages: {e}")
+        raise HTTPException(500, f"Failed to clear messages: {e}")
